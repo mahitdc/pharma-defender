@@ -73,7 +73,6 @@ Built with:
 pharma-defender/
 │
 ├── README.md
-├── LICENSE
 ├── screenshots/
 │   ├── gameplay1.png
 │   ├── gameplay2.png
@@ -147,6 +146,15 @@ My primary contributions included:
 
 ## 📸 Screenshots
 
+<div align="center">
+  <img src="screenshots/trial_round_gameplay.png" alt="Trial Round Gameplay" width="45%" />
+  <img src="screenshots/round1_game.png" alt="Round 1 Gameplay" width="45%" />
+  <br>
+  <img src="screenshots/round2_game.png" alt="Round 2 Gameplay" width="45%" />
+  <img src="screenshots/quiz_play.png" alt="Quiz Checkpoint" width="45%" />
+  <br>
+  <img src="screenshots/game_ending.png" alt="End Screen" width="45%" />
+</div>
 
 ---
 

@@ -1,0 +1,3421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>JUMANJI ESCAPE -- Dawn Survival Run (Patch 5.0)</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;background:#1a1430;font-family:'Courier New',monospace;touch-action:none;}
+#gameContainer{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#1a1430;}
+#gameCanvas{display:block;position:absolute;top:0;left:0;width:100%;height:100%;image-rendering:crisp-edges;}
+#hud{position:absolute;top:0;left:0;right:0;pointer-events:none;z-index:5;}
+#hudBar{display:flex;justify-content:space-between;align-items:center;padding:9px 16px;background:rgba(30,16,40,0.80);border-bottom:1px solid rgba(255,200,170,0.45);}
+#hudLeft,#hudRight{font-size:13px;color:#ffe8c8;letter-spacing:1.5px;min-width:120px;text-shadow:0 0 8px rgba(255,180,120,0.5);}
+#hudRight{text-align:right;}
+#hudMid{font-size:11px;color:#e8b8a8;text-align:center;flex:1;letter-spacing:3px;}
+#hudCollect{display:flex;justify-content:flex-end;gap:18px;padding:5px 16px;background:rgba(30,16,40,0.62);border-bottom:1px solid rgba(200,140,100,0.28);}
+.hcItem{font-size:12px;color:#f0c040;letter-spacing:1px;text-shadow:0 0 6px rgba(220,170,0,0.5);}
+#letterDashboard{position:absolute;top:62px;left:50%;transform:translateX(-50%);pointer-events:none;z-index:5;display:flex;flex-direction:column;align-items:center;gap:2px;}
+#letterDashboardLabel{font-size:9px;color:#d8a888;letter-spacing:3px;opacity:0.85;text-shadow:0 0 4px rgba(0,0,0,0.6);}
+#letterTracker{color:#ffe0c8;font-size:13px;letter-spacing:5px;white-space:nowrap;display:flex;align-items:center;background:rgba(20,10,16,0.38);padding:4px 12px;border-radius:4px;border:1px solid rgba(255,180,140,0.22);}
+#letterTracker .lSlot{display:inline-block;transition:color 0.12s;transform-origin:center bottom;}
+#letterTracker .lSlot.popping{animation:lPop 0.5s cubic-bezier(0.2,0.9,0.3,1.1) forwards;}
+#letterValueNote{font-size:9px;color:#ffc820;letter-spacing:1.5px;opacity:0.92;text-shadow:0 0 6px rgba(255,200,0,0.5);}
+@keyframes lPop{
+0%{transform:scale(1);color:#3a2438;text-shadow:none;}
+15%{transform:scale(3.6);color:#fff;text-shadow:0 0 6px #fff,0 0 16px #ffe0c8,0 0 30px rgba(255,180,120,1);}
+45%{transform:scale(3.4);color:#fff8ee;text-shadow:0 0 6px #fff,0 0 16px #ffe0c8;}
+100%{transform:scale(1);color:#ffc820;text-shadow:0 0 8px rgba(255,200,0,0.9);}
+}
+.tBtn{position:absolute;bottom:28px;width:100px;height:100px;border-radius:50%;background:rgba(60,30,50,0.40);border:1.5px solid rgba(255,180,140,0.55);color:rgba(255,224,200,0.92);font-size:10px;font-weight:700;letter-spacing:1px;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;z-index:10;backdrop-filter:blur(2px);touch-action:none;}
+#jumpBtn{right:18px;bottom:28px;}#blastBtn{right:104px;bottom:28px;}#fwdBtn{left:18px;bottom:28px;right:auto;}#backBtn{display:none !important;}
+#downBtn{right:18px;bottom:112px;width:60px;height:60px;font-size:9px;}
+.tBtn.active{background:rgba(220,140,90,0.5);}
+.tBtn.disabledBtn{opacity:0.32;}
+#cinematicOverlay{position:absolute;top:0;left:0;right:0;bottom:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:50;}
+#cinematicCanvas{display:block;max-width:100%;max-height:100%;}
+#questionOverlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(20,8,24,0.98); display: none;
+    flex-direction: column; align-items: center; 
+    justify-content: flex-start; /* Starts at the top instead of centering */
+    z-index: 30; color: #ffe8d0; padding: 20px; 
+    overflow-y: auto; /* Adds a scrollbar if the content is too tall */
+}
+#questionOverlay h2{font-size:13px;letter-spacing:2px;color:#d0a890;margin-bottom:12px;text-shadow:none;text-align:center;opacity:0.8;}
+#questionText{font-size:21px;font-weight:bold;color:#ffffff;text-shadow:0 0 10px rgba(255,255,255,0.4);margin-bottom:18px;text-align:center;max-width:480px;line-height:1.4;}
+#questionTimer{font-size:32px;color:#ff6a30;text-shadow:0 0 8px rgba(255,80,0,0.8);margin-bottom:8px;font-weight:bold;}
+#questionTimerBar{width:320px;max-width:90vw;height:8px;background:rgba(60,30,40,0.7);border-radius:4px;margin-bottom:14px;overflow:hidden;}
+#questionTimerFill{height:100%;width:100%;background:linear-gradient(90deg,#ff4020,#f0b020,#30e060);border-radius:4px;transition:width 0.1s linear;}
+#questionSubtitle{display:none !important;}
+#questionMultiplierHint{display:none !important;}
+.aBtn{margin:5px;padding:9px 26px;background:rgba(50,22,40,0.88);border:1px solid rgba(255,170,110,0.55);color:#ffe8d0;font-size:14px;cursor:pointer;border-radius:3px;font-family:'Courier New',monospace;transition:background 0.12s,border-color 0.12s,transform 0.12s;min-width:150px;}
+.aBtn:hover{background:rgba(120,60,40,0.88);}
+.aBtn:disabled{cursor:default;}
+.aBtn.correctFlash{background:rgba(20,170,80,0.92)!important;border-color:#40ff90!important;transform:scale(1.04);box-shadow:0 0 18px rgba(40,220,110,0.7);}
+.aBtn.wrongFlash{background:rgba(180,20,20,0.92)!important;border-color:#ff5040!important;transform:scale(0.97);box-shadow:0 0 18px rgba(255,60,40,0.6);}
+#letterValueNote{display:none !important;}
+#answerButtons {
+    display: flex; flex-direction: column; align-items: center; 
+    width: 100%; max-width: 520px; margin-bottom: 20px;
+}
+#endScreen{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(20,8,24,0.97);color:#ffe8d0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;z-index:40;padding:20px;overflow-y:auto;}
+#endScreen h1{font-size:26px;letter-spacing:3px;margin-bottom:8px;color:#ff9d50;text-shadow:0 0 12px rgba(255,150,60,0.8);}
+#endScreen p{font-size:15px;margin:4px 0;color:#e0b0a0;}
+#phraseReveal{font-size:20px;letter-spacing:5px;margin:14px 0;color:#ffc820;text-shadow:0 0 10px rgba(255,200,0,0.8);}
+#letterBreakdownBox{margin:10px 0;padding:10px 18px;border:1px solid rgba(255,200,100,0.35);border-radius:6px;background:rgba(255,180,80,0.06);min-width:260px;}
+#letterBreakdownBox h3{font-size:12px;letter-spacing:2px;color:#ffb060;margin-bottom:6px;}
+#letterBreakdownGrid{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin-bottom:6px;max-width:380px;}
+.lbChip{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:3px;font-size:12px;font-weight:700;}
+.lbChip.got{background:rgba(255,200,40,0.85);color:#2a1a04;text-shadow:none;}
+.lbChip.missing{background:rgba(80,60,50,0.45);color:rgba(255,220,190,0.35);}
+#letterBreakdownTotal{font-size:14px;color:#ffe070;letter-spacing:1px;}
+#restartBtn{margin-top:18px;padding:11px 30px;background:#7a3818;border:1px solid #ff9d50;color:#ffe8d0;font-size:14px;cursor:pointer;border-radius:3px;font-family:'Courier New',monospace;}
+#restartBtn:hover{background:#a8500a;}
+#notifBanner{position:absolute;top:78px;left:50%;transform:translateX(-50%);color:#ffe070;font-size:16px;letter-spacing:2px;text-shadow:0 0 8px rgba(255,210,0,0.85);pointer-events:none;z-index:20;opacity:0;transition:opacity 0.28s;white-space:nowrap;}
+#victoryOverlay{position:absolute;top:0;left:0;right:0;bottom:0;background:#000;display:none;z-index:60;flex-direction:column;align-items:center;justify-content:center;}
+#victoryCanvas{display:block;max-width:100%;max-height:100%;}
+#victorySkip{position:absolute;bottom:18px;right:18px;z-index:61;padding:8px 18px;background:rgba(50,22,40,0.8);border:1px solid rgba(255,170,110,0.6);color:#ffe8d0;font-size:12px;cursor:pointer;border-radius:3px;font-family:'Courier New',monospace;display:none;}
+#errBanner{position:absolute;bottom:6px;left:6px;font-size:10px;color:#ff8060;opacity:0.85;z-index:99;display:none;pointer-events:none;max-width:90%;}
+#fpsBanner{position:absolute;top:6px;right:6px;font-size:10px;color:#ff9d50;opacity:0.6;z-index:99;pointer-events:none;}
+@media (max-width: 800px) {
+    /* 1. Shrink the Top HUD so it doesn't take up the whole screen */
+    #hudBar { padding: 4px 8px; }
+    #hudLeft, #hudRight { font-size: 10px; min-width: 70px; }
+    #hudMid { font-size: 9px; }
+    #hudCollect { padding: 3px 8px; gap: 8px; }
+    .hcItem { font-size: 9px; }
+    #letterDashboard { top: 45px; }
+    #letterDashboardLabel { font-size: 7px; }
+    #letterTracker { font-size: 9px; padding: 2px 8px; letter-spacing: 2px; }
+
+    /* 2. Fix the Trivia Overlay so buttons NEVER get cut off */
+    #questionOverlay { padding: 5px 10px; justify-content: flex-start; overflow-y: auto; }
+    #questionOverlay h2 { font-size: 13px; margin-top: 5px; margin-bottom: 5px; }
+    #questionText { font-size: 15px; margin-bottom: 8px; max-width: 98%; line-height: 1.2; }
+    #questionTimer { font-size: 20px; margin-bottom: 4px; }
+    #questionTimerBar { margin-bottom: 8px; }
+    #answerButtons { flex-direction: column; width: 100%; max-width: 95%; gap: 4px; margin-bottom: 10px; }
+    .aBtn { font-size: 11px; padding: 8px 10px; margin: 0; width: 100%; box-sizing: border-box; white-space: normal; line-height: 1.3; }
+
+    /* 3. Perfect Thumb Controls for Landscape Play */
+    .tBtn { width: 50px; height: 50px; font-size: 8px; }
+    #jumpBtn { right: 10px; bottom: 20px; }
+    #blastBtn { right: 70px; bottom: 20px; }
+    #downBtn { right: 10px; bottom: 80px; width: 40px; height: 40px; }
+    #fwdBtn {
+    left: 10px;
+    bottom: 20px;
+    width: 85px !important;
+    height: 85px !important;
+    font-size: 12px !important;
+    right : auto; }
+    #backBtn { display: none !important; }
+
+    /* 4. The End Screen fixes we just made! */
+    #endScreen { padding: 10px; justify-content: flex-start; overflow-y: auto; }
+    #endScreen h1 { font-size: 20px; margin-bottom: 4px; }
+    #endScreen p { font-size: 12px; margin: 2px 0; }
+    #fTrivia { font-size: 13px !important; margin-top: 4px !important; }
+    #letterBreakdownBox { padding: 6px 10px; margin: 6px 0; min-width: 90%; }
+    #letterBreakdownBox h3 { font-size: 10px; margin-bottom: 4px; }
+    .lbChip { width: 16px; height: 16px; font-size: 10px; }
+    #letterBreakdownTotal { font-size: 11px; }
+    #phraseReveal { font-size: 16px; margin: 8px 0; letter-spacing: 3px; }
+    #restartBtn { padding: 8px 20px; font-size: 12px; margin-top: 10px; }
+}
+
+</style>
+</head>
+<body>
+<div id="gameContainer">
+<canvas id="gameCanvas"></canvas>
+<div id="hud">
+<div id="hudBar">
+<div id="hudLeft">HP: ---</div>
+<div id="hudMid">0 / 2500 m</div>
+<div id="hudRight">SCORE 0</div>
+</div>
+<div id="hudCollect">
+<span class="hcItem" id="hcCoins">COIN 0/150</span>
+<span class="hcItem" id="hcDiamonds">GEM 0/200</span>
+</div>
+</div>
+<div id="letterDashboard">
+<div id="letterDashboardLabel">LETTERS COLLECTED</div>
+<div id="letterTracker"></div>
+<div id="letterValueNote">WORTH 100 PTS EACH AT FINISH</div>
+</div>
+<div id="notifBanner"></div>
+<div class="tBtn" id="jumpBtn">JUMP</div>
+<div class="tBtn" id="downBtn">DROP</div>
+<div class="tBtn" id="blastBtn">FIRE</div>
+<div class="tBtn" id="fwdBtn">FWD</div>
+<div class="tBtn disabledBtn" id="backBtn">BACK</div>
+<div id="questionOverlay">
+<h2 id="questionTitle">JUMANJI ESCAPE CHALLENGE</h2>
+<div id="questionSubtitle"></div>
+<div id="questionMultiplierHint"></div>
+<div id="questionText"></div>
+<div id="questionTimer">25</div>
+<div id="questionTimerBar"><div id="questionTimerFill"></div></div>
+<div id="answerButtons"></div>
+</div>
+<div id="endScreen">
+<h1>ESCAPE COMPLETE</h1>
+<p id="fScore"></p><p id="fCoins"></p><p id="fDiamonds"></p>
+<p id="fYield"></p>
+<div id="letterBreakdownBox">
+<h3>LETTER ECONOMY BREAKDOWN</h3>
+<div id="letterBreakdownGrid"></div>
+<div id="letterBreakdownTotal"></div>
+</div>
+<div id="phraseReveal"></div>
+<button id="restartBtn">PLAY AGAIN</button>
+</div>
+<div id="cinematicOverlay"><canvas id="cinematicCanvas"></canvas></div>
+<div id="victoryOverlay"><canvas id="victoryCanvas"></canvas><button id="victorySkip">SKIP</button></div>
+<div id="errBanner"></div>
+<div id="fpsBanner"></div>
+</div>
+<script>
+(function(){
+"use strict";
+
+/* ================================================================
+GOOGLE SHEETS TOURNAMENT LINK
+================================================================ */
+var GOOGLE_SHEET_URL = "PASTE_YOUR_WEB_APP_URL_HERE";
+
+
+/* ================================================================
+GLOBAL ERROR BOUNDARY
+================================================================ */
+var errBanner=null;
+function safeErrBanner(msg){
+try{
+if(!errBanner) errBanner=document.getElementById('errBanner');
+if(errBanner){ errBanner.textContent='ERR: '+String(msg).slice(0,80); errBanner.style.display='block';
+setTimeout(function(){ try{errBanner.style.display='none';}catch(e){} },3000); }
+}catch(e){}
+}
+window.onerror=function(msg,src,line,col,err){
+console.error('[JE ERROR]',msg,'line:',line,err);
+safeErrBanner(String(msg).slice(0,80));
+return true;
+};
+window.addEventListener('unhandledrejection',function(ev){
+console.error('[JE PROMISE]',ev.reason);
+safeErrBanner('async err');
+try{ ev.preventDefault(); }catch(e){}
+});
+function safe(fn,fallback){
+try{ return fn(); }catch(e){ console.error('[safe]',e); safeErrBanner(e&&e.message?e.message:'err'); return fallback; }
+}
+
+/* ================================================================
+COMPACT UTIL
+================================================================ */
+function compact(arr,keepFn){
+var w=0;
+for(var r=0;r<arr.length;r++){
+var item=arr[r];
+if(item&&keepFn(item)){ if(w!==r) arr[w]=item; w++; }
+}
+arr.length=w;
+return arr;
+}
+
+/* ================================================================
+CANVAS SETUP
+================================================================ */
+var canvas=document.getElementById('gameCanvas');
+var ctx=canvas.getContext('2d',{alpha:false});
+var BW=960,BH=540,DPR=1;
+function resizeCanvas(){
+safe(function(){
+DPR=0.65;
+var aw=window.innerWidth,ah=window.innerHeight;
+canvas.style.width=aw+'px'; canvas.style.height=ah+'px';
+canvas.style.left='0px'; canvas.style.top='0px';
+canvas.width=Math.round(aw*DPR); canvas.height=Math.round(ah*DPR);
+ctx.setTransform(1,0,0,1,0,0);
+skyGradCache=null; leftTreeCache=null; rightTreeCache=null; mistCache=null;
+buildTreeCaches();
+});
+}
+window.addEventListener('resize',resizeCanvas);
+window.addEventListener('orientationchange',function(){ setTimeout(resizeCanvas,200); });
+function applyVirtualScale(){ var sx=canvas.width/BW; var sy=canvas.height/BH; ctx.setTransform(sx,0,0,sy,0,0); }
+
+/* ================================================================
+DAWN AUDIO ENGINE (Web Audio API)
+-- Organic jungle ambient: filtered white-noise wind with slow
+automation curve, deep tribal hand-drums (triangle wave rapid
+exponential decay), resonant wooden chime chords for pickups.
+================================================================ */
+var audioCtx=null;
+var ambientOn=false;
+var ambientMaster=null;
+var ambientNodes=[];
+var drumLoopHandle=null,shimmerLoopHandle=null;
+var beeBuzzNodes=[];
+
+function ensureAudio(){
+safe(function(){
+if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+if(audioCtx.state==='suspended') audioCtx.resume().catch(function(){});
+});
+}
+
+function rampGain(g,target,t,now){
+g.gain.cancelScheduledValues(now);
+g.gain.setValueAtTime(Math.max(0.0001,g.gain.value),now);
+g.gain.linearRampToValueAtTime(target,now+t);
+}
+
+/* Resonant wooden chime tone -- used for all item pickups */
+function playChimeTone(f,startOffset,dur,vol,type){
+if(!audioCtx) return;
+safe(function(){
+var now=audioCtx.currentTime+startOffset;
+var o=audioCtx.createOscillator();
+var g=audioCtx.createGain();
+var filt=audioCtx.createBiquadFilter();
+filt.type='lowpass'; filt.frequency.value=f*3.2; filt.Q.value=0.6;
+o.type=type||'sine'; o.frequency.value=f;
+g.gain.setValueAtTime(0.0001,now);
+g.gain.linearRampToValueAtTime(vol,now+Math.min(0.02,dur*0.18));
+g.gain.exponentialRampToValueAtTime(0.0001,now+dur);
+o.connect(filt); filt.connect(g); g.connect(audioCtx.destination);
+o.start(now); o.stop(now+dur+0.05);
+});
+}
+
+/* Wooden chime chord -- coin pickup */
+function sfxCoinRing(){
+if(!audioCtx) return;
+safe(function(){
+var chord=[1046.5,1318.5,1568.0];
+chord.forEach(function(f,i){ playChimeTone(f,i*0.018,0.42,0.085,'triangle'); });
+playChimeTone(2093.0,0.05,0.30,0.045,'sine');
+});
+}
+
+/* Bright resonant chime chord -- diamond pickup */
+function sfxDiamondChime(){
+if(!audioCtx) return;
+safe(function(){
+var chord=[784.0,987.8,1174.7,1480.0];
+chord.forEach(function(f,i){ playChimeTone(f,i*0.03,0.62,0.075,'sine'); });
+playChimeTone(392.0,0,0.5,0.05,'triangle');
+});
+}
+
+function sfxLetter(){ playChimeTone(880,0,0.28,0.08,'sine'); playChimeTone(1318.5,0.07,0.34,0.07,'sine'); }
+
+function sfxPhraseComplete(){
+[523.25,659.25,784.0,987.8,1318.5].forEach(function(f,i){ playChimeTone(f,i*0.085,0.5,0.08,'triangle'); });
+}
+
+function sfxCrownChime(){
+[880,1108.7,1318.5,1568,2093].forEach(function(f,i){ playChimeTone(f,i*0.10,0.7,0.07,'sine'); });
+}
+
+function sfxCheckpoint(){
+playChimeTone(480,0,0.26,0.075,'triangle');
+playChimeTone(660,0.10,0.26,0.075,'triangle');
+playChimeTone(880,0.20,0.40,0.08,'triangle');
+}
+
+function sfxPowerup(){
+playChimeTone(523.25,0,0.30,0.07,'sine');
+playChimeTone(659.25,0.05,0.36,0.06,'sine');
+}
+
+function sfxGrowth(){
+if(!audioCtx) return;
+safe(function(){
+var now=audioCtx.currentTime;
+var o=audioCtx.createOscillator(); var g=audioCtx.createGain();
+o.type='triangle'; o.frequency.setValueAtTime(160,now);
+o.frequency.exponentialRampToValueAtTime(420,now+0.5);
+g.gain.setValueAtTime(0.0001,now); g.gain.linearRampToValueAtTime(0.09,now+0.08);
+g.gain.exponentialRampToValueAtTime(0.0001,now+0.55);
+o.connect(g); g.connect(audioCtx.destination); o.start(now); o.stop(now+0.6);
+});
+}
+
+function sfxShrink(){
+if(!audioCtx) return;
+safe(function(){
+var now=audioCtx.currentTime;
+var o=audioCtx.createOscillator(); var g=audioCtx.createGain();
+o.type='triangle'; o.frequency.setValueAtTime(620,now);
+o.frequency.exponentialRampToValueAtTime(220,now+0.45);
+g.gain.setValueAtTime(0.0001,now); g.gain.linearRampToValueAtTime(0.09,now+0.06);
+g.gain.exponentialRampToValueAtTime(0.0001,now+0.5);
+o.connect(g); g.connect(audioCtx.destination); o.start(now); o.stop(now+0.55);
+});
+}
+
+function sfxJump(){ playChimeTone(360,0,0.14,0.05,'triangle'); }
+
+function sfxLaser(){
+if(!audioCtx) return;
+safe(function(){
+var now=audioCtx.currentTime;
+var o=audioCtx.createOscillator(); var g=audioCtx.createGain(); var f=audioCtx.createBiquadFilter();
+f.type='bandpass'; f.frequency.setValueAtTime(2200,now);
+f.frequency.exponentialRampToValueAtTime(700,now+0.09); f.Q.value=4;
+o.type='sawtooth'; o.frequency.setValueAtTime(1500,now);
+o.frequency.exponentialRampToValueAtTime(500,now+0.09);
+g.gain.setValueAtTime(0.0001,now); g.gain.linearRampToValueAtTime(0.06,now+0.01);
+g.gain.exponentialRampToValueAtTime(0.0001,now+0.10);
+o.connect(f); f.connect(g); g.connect(audioCtx.destination); o.start(now); o.stop(now+0.12);
+});
+}
+
+function sfxMicrobePop(){ playChimeTone(640,0,0.10,0.05,'sine'); playChimeTone(340,0.04,0.14,0.04,'sine'); }
+
+function sfxHit(){
+if(!audioCtx) return;
+safe(function(){
+var now=audioCtx.currentTime;
+var o=audioCtx.createOscillator(); var g=audioCtx.createGain();
+o.type='sine'; o.frequency.setValueAtTime(150,now);
+o.frequency.exponentialRampToValueAtTime(55,now+0.22);
+g.gain.setValueAtTime(0.0001,now); g.gain.linearRampToValueAtTime(0.11,now+0.012);
+g.gain.exponentialRampToValueAtTime(0.0001,now+0.25);
+o.connect(g); g.connect(audioCtx.destination); o.start(now); o.stop(now+0.28);
+});
+}
+
+function sfxAlarm(){
+playChimeTone(340,0,0.32,0.08,'triangle');
+playChimeTone(460,0.36,0.32,0.08,'triangle');
+playChimeTone(340,0.72,0.32,0.08,'triangle');
+}
+
+function sfxSpike(){ playChimeTone(95,0,0.20,0.08,'square'); }
+
+function sfxRevival(){
+[300,400,500,600,700].forEach(function(f,i){ playChimeTone(f,i*0.07,0.30,0.075,'triangle'); });
+}
+
+function sfxBeehive(){
+if(!audioCtx) return;
+safe(function(){
+var now=audioCtx.currentTime;
+var o1=audioCtx.createOscillator(); var g1=audioCtx.createGain();
+o1.type='sine'; o1.frequency.setValueAtTime(1100,now);
+o1.frequency.linearRampToValueAtTime(1900,now+0.16);
+o1.frequency.linearRampToValueAtTime(1500,now+0.30);
+g1.gain.setValueAtTime(0.0001,now);
+g1.gain.linearRampToValueAtTime(0.10,now+0.03);
+g1.gain.exponentialRampToValueAtTime(0.0001,now+0.36);
+o1.connect(g1); g1.connect(audioCtx.destination); o1.start(now); o1.stop(now+0.4);
+});
+}
+
+function sfxPlantSnap(){ playChimeTone(170,0,0.18,0.07,'triangle'); playChimeTone(110,0.06,0.16,0.05,'sine'); }
+
+function sfxRoar(){
+if(!audioCtx) return;
+safe(function(){
+var now=audioCtx.currentTime;
+var o=audioCtx.createOscillator(); var g=audioCtx.createGain();
+o.type='sawtooth'; o.frequency.setValueAtTime(150,now);
+o.frequency.exponentialRampToValueAtTime(70,now+0.42);
+g.gain.setValueAtTime(0.0001,now); g.gain.linearRampToValueAtTime(0.10,now+0.05);
+g.gain.exponentialRampToValueAtTime(0.0001,now+0.46);
+o.connect(g); g.connect(audioCtx.destination); o.start(now); o.stop(now+0.5);
+});
+}
+
+function startBeeBuzz(){
+if(!audioCtx) return;
+safe(function(){
+var now=audioCtx.currentTime;
+var o=audioCtx.createOscillator(); var g=audioCtx.createGain();
+var lfo=audioCtx.createOscillator(); var lfoG=audioCtx.createGain();
+o.type='sawtooth'; o.frequency.value=180;
+lfo.frequency.value=14; lfoG.gain.value=10;
+lfo.connect(lfoG); lfoG.connect(o.frequency);
+g.gain.setValueAtTime(0.0001,now); g.gain.linearRampToValueAtTime(0.012,now+1.2);
+o.connect(g); g.connect(audioCtx.destination);
+o.start(now); lfo.start(now);
+beeBuzzNodes.push({o:o,lfo:lfo,g:g});
+});
+}
+
+function stopBeeBuzz(){
+safe(function(){
+var now=audioCtx?audioCtx.currentTime:0;
+beeBuzzNodes.forEach(function(n){
+try{ rampGain(n.g,0.0001,0.4,now); n.o.stop(now+0.45); n.lfo.stop(now+0.45); }catch(e){}
+});
+beeBuzzNodes=[];
+});
+}
+
+/* Dawn ambient: continuous wind noise + organic tribal drums + shimmer */
+function startAmbient(){
+if(!audioCtx||ambientOn) return;
+ambientOn=true;
+safe(function(){
+var now=audioCtx.currentTime;
+ambientMaster=audioCtx.createGain();
+ambientMaster.gain.setValueAtTime(0.0001,now);
+ambientMaster.gain.linearRampToValueAtTime(1.0,now+2.5);
+ambientMaster.connect(audioCtx.destination);
+
+/* -- Wind through leaves: filtered white noise with slow LFO automation -- */
+var windBufSz=4*audioCtx.sampleRate;
+var windBuf=audioCtx.createBuffer(1,windBufSz,audioCtx.sampleRate);
+var wd=windBuf.getChannelData(0);
+for(var i=0;i<windBufSz;i++) wd[i]=(Math.random()*2-1);
+var windSrc=audioCtx.createBufferSource(); windSrc.buffer=windBuf; windSrc.loop=true;
+var windBp=audioCtx.createBiquadFilter(); windBp.type='bandpass'; windBp.frequency.value=320; windBp.Q.value=0.4;
+var windLp=audioCtx.createBiquadFilter(); windLp.type='lowpass'; windLp.frequency.value=850;
+var windGain=audioCtx.createGain(); windGain.gain.value=0.016;
+/* Slow oscillating automation curve on gain -- creates breathing leaf-rustle texture */
+var windLFO=audioCtx.createOscillator(); windLFO.frequency.value=0.06;
+var windLFOGain=audioCtx.createGain(); windLFOGain.gain.value=0.009;
+windLFO.connect(windLFOGain); windLFOGain.connect(windGain.gain);
+windSrc.connect(windBp); windBp.connect(windLp); windLp.connect(windGain); windGain.connect(ambientMaster);
+windSrc.start(); windLFO.start();
+ambientNodes.push(windSrc,windLFO);
+
+/* Low forest hum */
+var hum=audioCtx.createOscillator(); var humG=audioCtx.createGain();
+hum.type='sine'; hum.frequency.value=48; humG.gain.value=0.014;
+hum.connect(humG); humG.connect(ambientMaster); hum.start();
+ambientNodes.push(hum);
+
+/* -- Tribal hand-drum: low-freq triangle wave with rapid exponential decay -- */
+function playDrum(){
+if(!ambientOn||!audioCtx) return;
+safe(function(){
+var t=audioCtx.currentTime;
+var o=audioCtx.createOscillator(); var og=audioCtx.createGain(); var of=audioCtx.createBiquadFilter();
+of.type='lowpass'; of.frequency.value=320;
+o.type='triangle'; o.frequency.setValueAtTime(118,t);
+o.frequency.exponentialRampToValueAtTime(42,t+0.22);
+og.gain.setValueAtTime(0.0001,t); og.gain.linearRampToValueAtTime(0.16,t+0.012);
+og.gain.exponentialRampToValueAtTime(0.0001,t+0.34);
+o.connect(of); of.connect(og); og.connect(ambientMaster);
+o.start(t); o.stop(t+0.36);
+/* Skin texture burst */
+var skinSz=Math.floor(audioCtx.sampleRate*0.05);
+var skinBuf=audioCtx.createBuffer(1,skinSz,audioCtx.sampleRate);
+var sd=skinBuf.getChannelData(0);
+for(var k=0;k<skinSz;k++) sd[k]=(Math.random()*2-1)*(1-(k/skinSz));
+var skinSrc=audioCtx.createBufferSource(); skinSrc.buffer=skinBuf;
+var skinF=audioCtx.createBiquadFilter(); skinF.type='bandpass'; skinF.frequency.value=240; skinF.Q.value=1.1;
+var skinG=audioCtx.createGain(); skinG.gain.value=0.07;
+skinSrc.connect(skinF); skinF.connect(skinG); skinG.connect(ambientMaster);
+skinSrc.start(t);
+});
+var patterns=[0.62,0.66,0.62,1.24,0.62,0.66,1.86];
+var next=patterns[Math.floor(Math.random()*patterns.length)]*1000*(0.92+Math.random()*0.20);
+drumLoopHandle=setTimeout(playDrum,next);
+}
+drumLoopHandle=setTimeout(playDrum,900+Math.random()*1100);
+
+/* High shimmer chirp -- emulates birdsong texture */
+function playShimmer(){
+if(!ambientOn||!audioCtx) return;
+safe(function(){
+var t=audioCtx.currentTime;
+var freq=3200+Math.random()*1400;
+var o=audioCtx.createOscillator(); var g=audioCtx.createGain();
+o.type='sine'; o.frequency.value=freq;
+g.gain.setValueAtTime(0.0001,t);
+g.gain.linearRampToValueAtTime(0.007,t+0.4);
+g.gain.linearRampToValueAtTime(0.0001,t+0.9);
+o.connect(g); g.connect(ambientMaster);
+o.start(t); o.stop(t+1.0);
+});
+shimmerLoopHandle=setTimeout(playShimmer,500+Math.random()*900);
+}
+shimmerLoopHandle=setTimeout(playShimmer,600+Math.random()*800);
+});
+}
+
+function stopAmbient(){
+ambientOn=false;
+safe(function(){
+if(drumLoopHandle) clearTimeout(drumLoopHandle);
+if(shimmerLoopHandle) clearTimeout(shimmerLoopHandle);
+drumLoopHandle=null; shimmerLoopHandle=null;
+var now=audioCtx?audioCtx.currentTime:0;
+if(ambientMaster){ rampGain(ambientMaster,0.0001,0.6,now); }
+for(var an=0;an<ambientNodes.length;an++){
+try{ ambientNodes[an].stop(now+0.65); }catch(e){}
+}
+ambientNodes=[];
+ambientMaster=null;
+stopBeeBuzz();
+});
+}
+
+/* ================================================================
+CONSTANTS -- PATCH 5.0 "JUMANJI ESCAPE"
+PATCH NOTES (cumulative, includes prior 4.x notes plus new 5.0 work):
+[J1] All UI text, title, cinematic, end-screen rebranded to
+"JUMANJI ESCAPE".
+[J2] Accelerator Growth: horizontal speed multiplier is exactly
+1.15x (+15%). Visual scale is exactly 1.5x. Duration 8s.
+[J3] Shrink: physical size scaled to exactly 0.75x baseline.
+Duration 8s.
+[J4] 30 Crimson Apples spaced symmetrically with a wide gap
+(approx every 83m) using a linear table. No clustering.
+[J5] Center/third canopy tree completely removed from all draw
+paths. ONLY two side trees (left and right) are rendered.
+[J6] Canopy foliage palette locked to moss-green (#2D5A27
+/ #417136) per spec, now layered with organic noise-based
+shading rather than flat radial fills (see [K3]).
+[J7] World scroll gated strictly behind forward-hold.
+[J8] Microbes drift left independently of forward-hold.
+[J9] Tier2 Y lowered to GROUND_Y-185 for comfortable jump arc.
+[J10] GROW_SPEED_MULT corrected to 1.15 (was 1.10).
+[J11] Universal strict 25.00s countdown timer applies to BOTH the
+Beehive Challenge and the Emergency Heart Revival Challenge
+pop-ups.
+[J12] Beehive Challenge tiering simplified to 3 tiers based on
+elapsed answer time: <=5.00s = 2.0x, 5.01-10.00s = 1.75x,
+>10.00s = 1.5x. Score = mult * 10 * coinsCollected.
+Wrong answer OR timeout = 0 points, pop-up closes after a
+brief click-feedback flash, NO new question is generated
+(single chance).
+[J13] Emergency Heart Revival now runs on the same strict 25.00s
+timer. Correct answer always awards exactly 0 points and
+restores hearts. Wrong answer OR timeout instantly clears
+the question and a brand-new one appears with a fresh
+25.00s timer -- looping indefinitely until answered
+correctly.
+
+PATCH 5.0 NEW WORK:
+[K1] HITBOX FIX -- microbes now run an explicit, dedicated AABB
+(axis-aligned bounding box) collision pass against the
+mascot every single frame, independent of the laser/pickup
+loop ordering. A microbe that is not blasted before it
+reaches the mascot's bounding box now reliably registers a
+hit: hearts -1 exactly once per microbe, then the microbe is
+removed (consumed by the hit) and a 500ms flashing
+invincibility window begins (i-frames), mirroring the
+existing damagePlayer() flash/blink visual.
+[K2] TRIVIA CLICK FEEDBACK -- clicking any answer button no longer
+instantly disables/closes the panel. The clicked button
+flashes green (correct) or red (incorrect) immediately,
+all buttons lock, and only after a short delay (300ms) does
+the underlying scoring/revival/beehive resolution logic
+execute. Applies uniformly to the main trivia bank usage,
+Beehive Challenge, and Emergency Heart Revival Challenge.
+[K3] LETTER ECONOMY REWORK -- letters collected mid-run now grant
+ZERO points at pickup time (only a chime + dashboard tick).
+The full phrase "JUMANJIESCAPE" (13 letters, spaces stripped)
+is scored ONLY at the 2500m win-state: each individual letter
+actually collected is worth exactly 100 points, totalled and
+displayed as an explicit per-letter breakdown grid during the
+end-game victory/cyclone sequence and on the final results
+screen. The old flat +50-per-letter and +500-phrase-complete
+bonuses are removed in favor of this end-game calculator.
+[K4] DASHBOARD UI -- the letter tracker is now presented inside a
+labelled corner dashboard ("LETTERS COLLECTED" / value note)
+rather than a bare floating row, with the same pop animation
+retained for collection feedback.
+[K5] ORGANIC GRAPHICS OVERHAUL -- tree trunks, branches, canopy
+foliage, and platform top surfaces are redrawn using layered
+noise-perturbed strokes and multi-stop bark/moss gradients
+instead of smooth flat vector fills, per the anti-cartoon
+mandate. Platform tops now render dense individually-stroked
+grass blades in alternating shades rather than a flat green
+block.
+================================================================ */
+var TOTAL_DIST=2500,GRAVITY=1.2,JUMP_VY=-20;
+var TOTAL_DIAMONDS=200,TOTAL_COINS=150,TOTAL_MICROBES=280;
+var TOTAL_APPLES=30; /* [J4] */
+var TOTAL_BEEHIVES=20;
+var TOTAL_GROW_BOXES=15,TOTAL_SHRINK_BOXES=15;
+var GROUND_Y=BH-78;
+var TARGET_PHRASE='JUMANJI ESCAPE';
+var PHRASE_LETTERS=TARGET_PHRASE.replace(/ /g,'').split('');
+var DISPLAY_PHRASE=TARGET_PHRASE;
+var LETTER_POINT_VALUE=100; /* [K3] exact per-letter end-game value */
+var DROP_LOCK=0.25;
+var DIAMOND_COLORS=['#e8203a','#ff50b0','#9030e0'];
+/* [P10] three distinct microbe hues: Terracotta, Sunset Orange, Turmeric Yellow */
+var MICROBE_COLORS=[
+{name:'terracotta',  core:'#CC4E3C', mid:'#993020', glow:'rgba(204,78,60,0.65)'},
+{name:'sunsetOrange',core:'#FF7A30', mid:'#C2520E', glow:'rgba(255,122,48,0.62)'},
+{name:'turmeric',   core:'#FFC55F', mid:'#D49020', glow:'rgba(255,197,95,0.60)'}
+];
+var CHECKPOINT_M=[300,600,900,1200,1500,1800,2100];
+var CULL_MARGIN=140;
+var WORLD_SPEED_MPS=40.0;  // Increases how fast the world scrolls (try 8.5 to 10.0)
+var PX_PER_METER=6.2;     // Leave this one alone
+var PLAYER_MOVE_PX=150;    // Makes the player run forward much faster when holding the button /* base px/frame responsiveness */
+var GROW_SPEED_MULT=1.15; /* [J2/J10] exact +15% while Accelerator Growth active */
+var GROW_SCALE=1.5;       /* [J2] sprite height scale while grown */
+var SHRINK_SCALE=0.75;    /* [J3] sprite scale while shrunk */
+var PLAYER_MIN_X=60,PLAYER_MAX_X=BW*0.62;
+var MAX_SPIKED_LOGS_ONSCREEN=3;
+var MAX_PLANTS_ONSCREEN=1;
+var PLAYER_BASE_W=44,PLAYER_BASE_H=64;
+var LOOKAHEAD_M=(BW*0.8)/PX_PER_METER;
+var BEEHIVE_HANG_Y=GROUND_Y-150;
+/* [J9] Tier Y -- Tier2 lowered so jump arc clears comfortably */
+var TIER_Y={ground:GROUND_Y, tier1:GROUND_Y-100, tier2:GROUND_Y-185};
+var TIER_KEYS=['ground','tier1','tier2'];
+/* [J11] Single universal countdown duration used by every question pop-up */
+var QUESTION_TIME_LIMIT=25.0;
+/* [K1] Microbe collision / damage tuning */
+var MICROBE_HIT_INVULN_MS=500; /* exact 500ms i-frame window on a microbe hit */
+/* [K2] Trivia answer click feedback delay before resolving logic */
+var ANSWER_FEEDBACK_DELAY_MS=300;
+
+function buildSpawnTable(total,totalDist,startM,seed){
+var table=[],spawned=0,rng=seed;
+function rand(){ rng=(rng*16807)%2147483647; return (rng-1)/2147483646; }
+var spacing=(totalDist-startM)/Math.max(1,total);
+var cursor=startM,guard=0;
+while(spawned<total&&guard<100000){
+guard++;
+var clust=spawned<total-3&&rand()<0.38?(rand()<0.5?2:3):1;
+var ac=Math.min(clust,total-spawned);
+table.push({meter:cursor,clusterSize:ac,yVariant:rand()});
+spawned+=ac;
+cursor+=spacing*ac+rand()*spacing*0.55-spacing*0.28;
+cursor=Math.max(cursor,startM+18);
+}
+return table;
+}
+
+var DIAMOND_TABLE=buildSpawnTable(TOTAL_DIAMONDS,2480,60,982451653);
+var COIN_TABLE=buildSpawnTable(TOTAL_COINS,2460,80,1234567891);
+
+function buildLinearTable(total,span,start){
+var table=[],spacing=span/Math.max(1,total);
+for(var i=0;i<total;i++) table.push({meter:start+i*spacing});
+return table;
+}
+
+var MICROBE_TABLE=buildLinearTable(TOTAL_MICROBES,2420,80);
+/* [J4] 30 apples spaced symmetrically via linear table -- no clustering, ~83m apart */
+var APPLE_TABLE=buildLinearTable(TOTAL_APPLES,2490,20);
+var BEEHIVE_TABLE=buildLinearTable(TOTAL_BEEHIVES,2350,80+(2350/TOTAL_BEEHIVES)*0.4);
+var GROW_TABLE=buildLinearTable(TOTAL_GROW_BOXES,2400,150);
+var SHRINK_TABLE=buildLinearTable(TOTAL_SHRINK_BOXES,2400,210);
+var LETTER_TABLE=buildLinearTable(PHRASE_LETTERS.length,2280,120);
+
+/* ================================================================
+90-SEGMENT STAGGERED MULTI-TIER PLATFORM LAYOUT (NON-OVERLAPPING)
+================================================================ */
+var PLATFORM_SEGMENT_COUNT=130;
+var PLATFORM_MIN_WIDTH_PX=80,PLATFORM_MAX_WIDTH_PX=140;
+var PLATFORM_MIN_GAP_M=4,PLATFORM_MAX_GAP_M=9;
+var PLATFORM_TABLE=(function buildPlatformTable(){
+var table=[];
+var rng=384712;
+function rnd(){ rng=(rng*16807)%2147483647; return (rng-1)/2147483646; }
+var startM=40,endM=TOTAL_DIST-30;
+var cursor=startM;
+var prevTierIdx=0;
+for(var i=0;i<PLATFORM_SEGMENT_COUNT;i++){
+var widthPx=PLATFORM_MIN_WIDTH_PX+rnd()*(PLATFORM_MAX_WIDTH_PX-PLATFORM_MIN_WIDTH_PX);
+var widthM=widthPx/PX_PER_METER;
+var gapM=PLATFORM_MIN_GAP_M+rnd()*(PLATFORM_MAX_GAP_M-PLATFORM_MIN_GAP_M);
+var tierRoll=rnd();
+var tierIdx;
+if(tierRoll<0.40){ tierIdx=0; } else if(tierRoll<0.74){ tierIdx=1; } else { tierIdx=2; }
+var tierDelta=Math.abs(tierIdx-prevTierIdx);
+if(tierDelta>1){ tierIdx=prevTierIdx+(tierIdx>prevTierIdx?1:-1); }
+prevTierIdx=tierIdx;
+var leftEdge=cursor;
+var centerMeter=leftEdge+widthM/2;
+if(centerMeter>endM) centerMeter=endM;
+var typeRoll=rnd();
+var type;
+if(typeRoll<0.30){ type='bridge'; } else if(typeRoll<0.60){ type='mossy'; } else if(typeRoll<0.80){ type='stone'; } else { type='log'; }
+table.push({meter:centerMeter,tier:TIER_KEYS[tierIdx],tierIdx:tierIdx,width:widthPx,type:type,rockSeed:Math.floor(rnd()*100000),grassSeed:Math.floor(rnd()*100000)});
+cursor=leftEdge+widthM+gapM;
+}
+table.sort(function(a,b){ return a.meter-b.meter; });
+return table;
+})();
+
+/* ================================================================
+GAME STATE
+================================================================ */
+var G={
+running:false,phase:'cinematic',ended:false,
+distance:0,score:0,coinsCollected:0,diamondsCollected:0,
+hearts:3,maxHearts:3,speedMult:1,
+scaleMode:'normal',scaleT:0,
+finishing:false,finishTimer:0,
+isQuestion:false,isRevivalQuestion:false,isBeehiveQuestion:false,
+invulnT:0,checkpointsPassed:new Set(),lettersCollected:new Set(),
+phraseComplete:false,phraseBanner:0,scrollX:0,fwdHeld:false,
+dt:1/60,lastTime:0,microbeTableIdx:0,appleTableIdx:0,beehiveTableIdx:0,
+diamondTableIdx:0,coinTableIdx:0,growTableIdx:0,shrinkTableIdx:0,letterTableIdx:0,
+lcSpawned:0,trackTimer:0,
+revivalQPool:[],beehiveQPool:[],questionsShuffle:[],beehiveElapsed:0,
+beehiveTimerInterval:null,qTimerInterval:null,revivalElapsed:0,revivalTimerInterval:null,
+bonusScore:0,stepPhase:0,wasAirborne:false,
+platformTableIdx:0,
+microbeInvulnT:0, /* [K1] dedicated i-frame timer driven by microbe collisions */
+letterEconomyApplied:false /* [K3] idempotency guard for the end-game letter bonus */
+};
+
+var P={x:100,y:GROUND_Y,w:PLAYER_BASE_W,h:PLAYER_BASE_H,vy:0,onGround:true,onPlatform:false,currentPlat:null,dropTimer:0};
+var lasers=[],microbes=[],powerups=[];
+var particles=[],platforms=[],letterCrates=[];
+var pollen=[];
+var floatingTexts=[],diamonds=[],goldCoins=[];
+var carniPlants=[],spikedLogs=[],beehives=[];
+var canopyBirds=[];
+
+/* Pebbles */
+var pebbles=[];
+function initPebbles(){
+pebbles=[];
+var rng=7331;
+function rr2(){ rng=(rng*9301+49297)%233280; return rng/233280; }
+for(var i=0;i<10;i++){
+pebbles.push({worldX:80+rr2()*2400,r:3+rr2()*4,cr:Math.floor(rr2()*40)+150,cg:Math.floor(rr2()*30)+120,cb:Math.floor(rr2()*25)+110});
+}
+}
+
+/* ================================================================
+DUST POOL
+================================================================ */
+var DUST_POOL_SIZE=180;
+var dustPool=[];
+(function initDustPool(){
+for(var i=0;i<DUST_POOL_SIZE;i++){
+dustPool.push({active:false,x:0,y:0,vx:0,vy:0,r:0,life:0,maxLife:0,alpha:0,r1:225,g1:225,b1:230,type:'dust'});
+}
+})();
+
+function spawnDust(x,y,vx,vy,r,life,rv,gv,bv,type){
+for(var i=0;i<dustPool.length;i++){
+var d=dustPool[i];
+if(!d.active){
+d.active=true; d.x=x; d.y=y; d.vx=vx; d.vy=vy; d.r=r;
+d.life=life; d.maxLife=life; d.alpha=1;
+d.r1=rv!==undefined?rv:225; d.g1=gv!==undefined?gv:225; d.b1=bv!==undefined?bv:230;
+d.type=type||'dust'; return d;
+}
+}
+return null;
+}
+
+function emitRunDust(){
+safe(function(){
+if(!P.onGround&&!P.onPlatform) return;
+var footY=P.y-3;
+var footX=P.x+P.w*0.30+Math.random()*P.w*0.40;
+spawnDust(footX,footY,-(35+Math.random()*45+G.speedMult*18),-(6+Math.random()*12),1.8+Math.random()*2.0,0.45+Math.random()*0.05,170+Math.floor(Math.random()*20),
+130+Math.floor(Math.random()*20),
+90+Math.floor(Math.random()*15),
+'dust'
+);
+});
+}
+
+function emitJumpBurst(){
+safe(function(){
+var footY=P.y-2; var footX=P.x+P.w*0.5;
+var n=8+Math.floor(Math.random()*3);
+for(var i=0;i<n;i++){
+var ang=Math.PI+(Math.random()-0.5)*1.8;
+var sp=55+Math.random()*100;
+spawnDust(footX+(Math.random()-0.5)*12,footY,Math.cos(ang)*sp,Math.sin(ang)*sp*0.55-28,2.4+Math.random()*2.8,0.40+Math.random()*0.08,165,130,90,'burst');
+}
+});
+}
+
+function emitLandingShockwave(){
+safe(function(){
+var footY=P.y-4; var footX=P.x+P.w*0.5;
+var n=12;
+for(var i=0;i<12;i++){
+var dir=(i<n/2)?-1:1;
+var sp=60+Math.random()*80;
+var ang=dir*(0.05+Math.random()*0.25);
+spawnDust(footX+(Math.random()-0.5)*8,footY,Math.cos(ang)*sp*dir,Math.sin(Math.abs(ang))*sp*0.18-5,1.6+Math.random()*2.0,0.35+Math.random()*0.08,150,120,80,'shockwave');
+}
+});
+}
+
+function updateDustPool(dt,move){
+for(var i=0;i<dustPool.length;i++){
+var d=dustPool[i];
+if(!d.active) continue;
+d.life-=dt; if(d.life<=0){ d.active=false; d.alpha=0; continue; }
+d.x+=d.vx*dt-move*0.50; d.y+=d.vy*dt;
+if(d.type!=='shockwave') d.vy+=55*dt; else d.vx*=(1-dt*3.5);
+d.r+=dt*1.2; d.alpha=Math.max(0,d.life/d.maxLife);
+if(d.alpha<=0) d.active=false;
+}
+}
+
+function drawDustPool(){
+safe(function(){
+for(var i=0;i<dustPool.length;i++){
+var d=dustPool[i];
+if(!d.active||d.alpha<=0) continue;
+ctx.save();
+var ao=Math.max(0.1,Math.min(0.4,d.alpha*0.4));
+ctx.globalAlpha=ao;
+var g2=ctx.createRadialGradient(d.x,d.y,0,d.x,d.y,d.r*2.2);
+g2.addColorStop(0,'rgba('+d.r1+','+d.g1+','+d.b1+',0.75)');
+g2.addColorStop(0.55,'rgba('+d.r1+','+d.g1+','+d.b1+',0.30)');
+g2.addColorStop(1,'rgba('+d.r1+','+d.g1+','+d.b1+',0)');
+ctx.fillStyle=g2; ctx.beginPath(); ctx.arc(d.x,d.y,d.r*2.2,0,Math.PI*2); ctx.fill();
+ctx.restore();
+}
+});
+}
+
+/* ================================================================
+QUESTIONS BANK
+================================================================ */
+var QUESTIONS=[
+  { q: 'Choose the LIE regarding Paracetamol:', o: ['Paracetamol is commonly used to reduce fever.', 'Paracetamol belongs to the penicillin class of antibiotics.', 'Excessive use of paracetamol can damage the liver.'], a: 1 },
+  { q: 'Choose the LIE regarding antibiotic resistance:', o: ['Antibiotic resistance develops only in patients, not in bacteria.', 'Resistant bacteria can spread between individuals.', 'Incomplete antibiotic courses may contribute to resistance.'], a: 0 },
+  { q: 'Choose the LIE regarding vaccines:', o: ['mRNA vaccines contain genetic instructions for producing a protein.', 'Vaccines can generate immune memory.', 'Vaccines protect by directly killing pathogens in the bloodstream.'], a: 2 },
+  { q: 'Choose the LIE regarding Vitamin C:', o: ['Vitamin C is a fat-soluble vitamin', 'Citrus fruits are a good source of Vitamin C.', 'Vitamin C deficiency can cause scurvy'], a: 0 },
+  { q: 'Choose the LIE regarding Aspirin:', o: ['Aspirin can help reduce pain.', 'Aspirin can affect blood clotting.', 'Aspirin is generally preferred over paracetamol in patients with a high risk of gastrointestinal bleeding.'], a: 2 },
+  { q: 'Choose the LIE regarding pharmacists:', o: ['Pharmacists may contribute to the detection and reporting of adverse drug reactions.', 'Pharmacists are permitted to prescribe Schedule H medicines independently to patients in routine practice across India.', 'Pharmacists can help optimize medication therapy by identifying potential medication-related problems'], a: 1 },
+  { q: 'Choose the LIE regarding drug interactions:', o: ['Clinically significant drug interactions are rare and therefore generally ignored during prescription review.', 'Two drugs may interact even if they are administered at different times of the day.', 'Drug interactions can occur through effects on liver enzymes.'], a: 0 },
+  { q: 'Choose the LIE regarding suspensions:', o: ['Flocculated particles settle rapidly due to the formation of larger aggregates.', 'Deflocculated suspensions often appear more uniformly dispersed for a longer time.', 'The sediment formed by a flocculated suspension is usually more compact and harder to redisperse than that of a deflocculated suspension.'], a: 2 },
+  { q: 'Choose the LIE regarding diabetes:', o: ['HbA1c reflects long-term blood glucose control.', 'Type 2 Diabetes occurs only in children.', 'Insulin resistance is associated with Type 2 Diabetes.'], a: 1 },
+  { q: 'Choose the LIE regarding emulsions:', o: ['Increasing droplet size generally improves the stability of an emulsion.', 'The dispersed phase in an emulsion is present as fine droplets.', 'Emulsifying agents can form a protective film around dispersed droplets.'], a: 0 },
+  { q: 'Choose the LIE regarding hypertension management:', o: ['Hypertension is often referred to as a "silent" condition because many patients may not notice symptoms.', 'Once antihypertensive therapy is started, lifestyle modifications no longer influence blood pressure management.', 'Lifestyle changes can play an important role in blood pressure control.'], a: 1 },
+  { q: 'Choose the LIE regarding medication dosing:', o: ['Expired medicines may lose effectiveness over time.', 'Patients should generally follow the prescribed dosage instructions.', 'Doubling the dose always speeds up recovery safely.'], a: 2 },
+  { q: 'Choose the LIE regarding fever:', o: ['The degree of fever alone is sufficient to determine the cause of the illness.', 'Fever can result from infectious as well as non-infectious conditions.', 'Certain medications and vaccines may occasionally cause fever.'], a: 0 },
+  { q: 'Choose the LIE regarding blood groups:', o: ['O-negative blood lacks A, B, and Rh (D) antigens on red blood cells.', 'AB-positive individuals can receive red blood cells from all ABO blood groups.', 'An Rh-negative person can safely receive Rh-positive blood repeatedly without risk of sensitization.'], a: 2 },
+  { q: 'Choose the LIE regarding drug development:', o: ['Clinical trials are conducted before a drug is widely marketed.', 'Every drug discovered in a laboratory is automatically approved for use in humans.', 'Drug development often takes several years.'], a: 1 },
+  { q: 'Choose the LIE regarding anticoagulants and antiplatelets:', o: ['Warfarin acts by inhibiting Vitamin K epoxide reductase.', 'Heparin directly inhibits thrombin activity through antithrombin III.', 'Aspirin acts as a Vitamin K antagonist.'], a: 2 },
+  { q: 'Choose the LIE regarding drug administration routes:', o: ['Sublingual administration undergoes extensive first-pass metabolism.', 'Intravenous administration bypasses first-pass metabolism.', 'First-pass metabolism can reduce oral bioavailability.'], a: 0 },
+  { q: 'Choose the LIE regarding antibiotics:', o: ['Penicillin contains a β-lactam ring.', 'Tetracyclines contain a β-lactam ring.', 'Cephalosporins belong to the β-lactam class.'], a: 1 },
+  { q: 'Choose the LIE regarding autonomic drugs:', o: ['Atropine is an antimuscarinic drug.', 'Atropine stimulates salivary secretion.', 'Pilocarpine is a muscarinic agonist.'], a: 1 },
+  { q: 'Choose the LIE regarding Diazepam:', o: ['Diazepam belongs to the benzodiazepine class.', 'Benzodiazepines enhance GABAergic neurotransmission.', 'Diazepam is an opioid analgesic.'], a: 2 },
+  { q: 'Choose the LIE regarding liquid dosage forms:', o: ['A solution always contains visible drug particles.', 'An emulsion consists of two immiscible liquids.', 'A suspension contains insoluble drug particles dispersed in a liquid.'], a: 0 },
+  { q: 'Choose the LIE regarding bioavailability:', o: ['Bioavailability is expressed as a percentage.', 'Absolute bioavailability compares a dosage form with IV administration.', 'Bioavailability is always 100% for oral drugs.'], a: 2 },
+  { q: 'Choose the LIE regarding antibiotic origins:', o: ['Streptomycin is produced by Streptomyces species.', 'Erythromycin is produced by bacteria.', 'Penicillin was originally obtained from fungi.'], a: 1 },
+  { q: 'Choose the LIE regarding poisoning management:', o: ['Activated charcoal neutralizes poisons through a chemical reaction.', 'Gastric lavage may be used in selected poisoning cases.', 'Activated charcoal can adsorb certain poisons.'], a: 0 },
+  { q: 'Choose the LIE regarding biophysical properties of drugs:', o: ['The Henderson-Hasselbalch equation relates pH and pKa.', 'Ionized drugs cross biological membranes more easily than unionized drugs.', 'Weak acids are generally better absorbed in acidic environments.'], a: 1 },
+  { q: 'Choose the LIE regarding antidiabetic medications:', o: ['Metformin is a first-line drug for Type 2 Diabetes Mellitus.', 'Insulin is a peptide hormone.', 'Metformin primarily acts by stimulating pancreatic insulin secretion.'], a: 2 },
+  { q: 'Choose the LIE regarding antibiotic mechanisms:', o: ['Rifampicin inhibits bacterial RNA polymerase.', 'Ciprofloxacin inhibits DNA gyrase.', 'Amoxicillin inhibits protein synthesis.'], a: 2 },
+  { q: 'Choose the LIE regarding lyophilization:', o: ['Lyophilization is also known as freeze-drying.', 'Lyophilization involves drying products at very high temperatures.', 'Lyophilization improves the stability of some pharmaceutical products.'], a: 1 },
+  { q: 'Choose the LIE regarding clinical trials and monitoring:', o: ['Phase IV trials are conducted before animal studies.', 'Phase IV clinical trials occur after drug approval.', 'Pharmacovigilance involves monitoring drug safety after marketing.'], a: 0 },
+  { q: 'Choose the LIE regarding opioids:', o: ['Morphine is a natural opioid alkaloid.', 'Naloxone is an opioid receptor agonist.', 'Naloxone is used to reverse an opioid overdose.'], a: 1 },
+  { q: 'Choose the LIE regarding metabolic and physiological processes:', o: ['Glycolysis occurs exclusively within mitochondria.', 'Vitamin B12 deficiency may lead to megaloblastic anemia.', 'Glycogen phosphorylase catalyzes the rate-limiting step in glycogenolysis.'], a: 0 },
+  { q: 'Choose the LIE regarding physiological systems:', o: ['The Na+/K+ ATPase pump transports 3 sodium ions out of the cell and 2 potassium ions into the cell.', 'Intrinsic factor is essential for Vitamin B12 absorption.', 'Secretin is released from pancreatic β-cells.'], a: 2 },
+  { q: 'Choose the LIE regarding pharmacognosy and testing:', o: ['Keller-Killiani test detects deoxysugars present in cardiac glycosides.', 'Senna contains tropane alkaloids as its principal constituents.', 'Volatile oils are commonly obtained by steam distillation.'], a: 1 },
+  { q: 'Choose the LIE regarding human physiology:', o: ['The liver is the primary site of the urea cycle.', 'Albumin is synthesized primarily in the spleen.', 'Carbon dioxide is transported in blood predominantly as bicarbonate ions.'], a: 1 },
+  { q: 'Choose the LIE regarding pharmaceutical excipients:', o: ['Bentonite is primarily used as a sweetening agent.', 'Acacia functions as a natural emulsifying agent.', 'Magnesium stearate is used as a lubricant in tablet formulation.'], a: 0 },
+  { q: 'Choose the LIE regarding microbiology:', o: ['Endotoxins are mainly associated with Gram-negative bacteria.', 'Mycobacterium tuberculosis is acid-fast due to mycolic acids in its cell wall.', 'Bacterial spores are destroyed by boiling water for a few minutes.'], a: 2 },
+  { q: 'Choose the LIE regarding pharmacokinetics:', o: ['First-pass metabolism can significantly reduce oral bioavailability.', 'Drugs administered sublingually largely bypass first-pass metabolism.', 'Intramuscular administration always provides 100% bioavailability.'], a: 2 },
+  { q: 'Choose the LIE regarding pharmacodynamics:', o: ['Competitive antagonists shift the dose-response curve to the right without reducing maximal response.', 'Phenylephrine primarily stimulates β2 receptors.', 'Atropine acts as a competitive muscarinic receptor antagonist.'], a: 1 },
+  { q: 'Choose the LIE regarding cardiovascular drugs:', o: ['Heparin exerts its anticoagulant action by inhibiting cyclooxygenase.', 'Warfarin inhibits Vitamin K epoxide reductase.', 'Clopidogrel irreversibly inhibits the P2Y12 receptor.'], a: 0 },
+  { q: 'Choose the LIE regarding antiepileptic drug interactions:', o: ['Phenytoin exhibits capacity-limited pharmacokinetics.', 'Carbamazepine undergoes autoinduction.', 'Valproic acid accelerates the metabolism of lamotrigine.'], a: 2 },
+  { q: 'Choose the LIE regarding inflammation mediators:', o: ['Histamine increases vascular permeability during acute inflammation.', 'Inflammation is characterized by redness, heat, swelling, and pain.', 'Bradykinin is primarily responsible for reducing pain sensation.'], a: 2 },
+  { q: 'Choose the LIE regarding suspension systems:', o: ['The zeta potential influences suspension stability.', 'Flocculated suspensions generally settle rapidly but are easily redispersed.', 'Deflocculated suspensions produce sediments that are easy to redisperse.'], a: 2 },
+  { q: 'Choose the LIE regarding drug metabolism induction/inhibition:', o: ['CYP3A4 is responsible for the metabolism of many clinically important drugs.', 'Grapefruit juice may increase plasma concentrations of some CYP3A4 substrates.', 'Rifampicin is a potent inhibitor of CYP3A4.'], a: 2 },
+  { q: 'Choose the LIE regarding optical analytics:', o: ['Beer-Lambert\'s law relates absorbance to concentration.', 'Absorbance is directly proportional to path length.', 'Increasing the wavelength always increases the absorbance of a solution.'], a: 2 },
+  { q: 'Choose the LIE regarding bacterial growth kinetics:', o: ['Bacterial growth follows lag, log, stationary, and decline phases.', 'During the log phase, bacterial cells divide at a constant rate.', 'Antibiotics that inhibit cell wall synthesis are most effective during the stationary phase.'], a: 2 },
+  { q: 'Choose the LIE regarding enzyme properties:', o: ['Competitive inhibition can be overcome by increasing substrate concentration.', 'Enzymes are consumed during the reaction.', 'Enzymes decrease the activation energy of a reaction.'], a: 1 },
+  { q: 'Choose the LIE regarding renal physiology and hormones:', o: ['Aldosterone primarily increases glucose reabsorption.', 'Glomerular filtration occurs in Bowman\'s capsule.', 'ADH increases water reabsorption in the collecting ducts.'], a: 0 },
+  { q: 'Choose the LIE regarding pancreatic hormones:', o: ['Type 1 diabetes results from destruction of pancreatic β-cells.', 'Insulin lowers blood glucose levels.', 'Glucagon is secreted by β-cells.'], a: 2 },
+  { q: 'Choose the LIE regarding biochemical assays:', o: ['The biuret test detects peptide bonds.', 'Millon\'s test detects sulfur-containing amino acids.', 'Ninhydrin gives a purple color with most amino acids.'], a: 1 },
+  { q: 'Choose the LIE regarding organic chemical acidity:', o: ['Ethers are more acidic than alcohols.', 'Alcohols generally have higher boiling points than alkanes of similar molecular weight.', 'Carboxylic acids are stronger acids than phenols.'], a: 0 },
+  { q: 'Choose the LIE regarding endocrine regulations:', o: ['Thyroxine contains iodine.', 'Calcitonin decreases blood calcium levels.', 'Parathyroid hormone decreases blood calcium levels.'], a: 2 },
+  { q: 'Choose the LIE regarding carbohydrates classification:', o: ['Fructose is classified as a ketohexose despite sharing a molecular formula with glucose.', 'Fructose is an aldohexose.', 'Ribose is a pentose sugar found in RNA.'], a: 1 },
+  { q: 'Choose the LIE regarding disaccharides properties:', o: ['Sucrose is classified as a reducing sugar.', 'Lactose consists of glucose and galactose units.', 'Maltose contains two glucose molecules.'], a: 0 },
+  { q: 'Choose the LIE regarding complex polysaccharides:', o: ['Cellulose contains β(1→4) glycosidic linkages.', 'Glycogen serves as the primary storage polysaccharide in animals.', 'Starch is composed exclusively of fructose residues.'], a: 2 },
+  { q: 'Choose the LIE regarding aromaticity reactions:', o: ['Benzene contains six delocalized π-electrons satisfying Hückel\'s rule.', 'Benzene rapidly decolourizes bromine water in the absence of a catalyst.', 'Electrophilic aromatic substitution is generally favored over addition reactions in benzene.'], a: 1 },
+  { q: 'Choose the LIE regarding bacterial structures:', o: ['All bacteria possess a membrane-bound nucleus.', 'Bacteria contain 70S ribosomes for protein synthesis.', 'Bacteria reproduce primarily through binary fission.'], a: 0 },
+  { q: 'Choose the LIE regarding microbial control definitions:', o: ['Autoclaving employs saturated steam under pressure.', 'Membrane filtration is useful for heat-sensitive pharmaceutical preparations.', 'Disinfection and sterilization eliminate the same range of microorganisms.'], a: 2 },
+  { q: 'Choose the LIE regarding stereochemistry rules:', o: ['A molecule containing a chiral carbon will always exhibit optical activity.', 'Enantiomers rotate plane-polarized light in opposite directions.', 'Enantiomers possess identical boiling points under identical conditions.'], a: 0 },
+  { q: 'Choose the LIE regarding nucleophilic substitutions:', o: ['Carbocation rearrangement may occur during SN1 reactions.', 'SN2 reactions generally occur faster with tertiary alkyl halides.', 'SN2 reactions proceed through a pentacoordinate transition state.'], a: 1 },
+  { q: 'Choose the LIE regarding heterocyclic aromatic systems:', o: ['Pyrrole contributes a lone pair of electrons to the aromatic sextet.', 'Benzene contains six delocalized π-electrons.', 'Cyclooctatetraene is planar and aromatic under normal conditions.'], a: 2 },
+  { q: 'Choose the LIE regarding anti-Parkinson medication dynamics:', o: ['Carbidopa readily crosses the blood-brain barrier and directly increases central dopamine levels.', 'Levodopa is commonly co-administered with carbidopa.', 'Carbidopa inhibits peripheral dopa decarboxylase.'], a: 0 },
+  { q: 'Choose the LIE regarding respiratory pathodynamics:', o: ['Salbutamol produces bronchodilation primarily through β₂-adrenergic receptor activation.', 'Airflow limitation in COPD is generally fully reversible.', 'Bronchoconstriction can result from contraction of airway smooth muscle.'], a: 1 },
+  { q: 'Choose the LIE regarding diabetes insipidus vs mellitus:', o: ['Diabetes insipidus may result from a deficiency of antidiuretic hormone (ADH).', 'Type 1 diabetes mellitus involves autoimmune destruction of pancreatic β-cells.', 'Diabetes insipidus is characterized primarily by persistent hyperglycemia.'], a: 2 },
+  { q: 'Choose the LIE regarding crude drug fundamentals:', o: ['All crude drugs used in pharmacognosy are derived exclusively from plants.', 'Digitalis is obtained from a plant source.', 'Alkaloids are typically nitrogen-containing natural products.'], a: 0 },
+  { q: 'Choose the LIE regarding pharmacological interactions metrics:', o: ['An isobologram can be used to evaluate interactions between two drugs.', 'Synergistic combinations always reduce therapeutic efficacy.', 'Synergism occurs when the combined effect exceeds the expected additive effect.'], a: 1 },
+  { q: 'Choose the LIE regarding biological catalysts kinetics:', o: ['Competitive inhibition can be overcome by increasing substrate concentration.', 'Enzymes decrease the activation energy of a reaction.', 'Enzymes are consumed during the reaction.'], a: 2 },
+  { q: 'Choose the LIE regarding homeostatic kidney functions:', o: ['Aldosterone primarily increases glucose reabsorption.', 'Glomerular filtration occurs in Bowman\'s capsule.', 'ADH increases water reabsorption in the collecting ducts.'], a: 0 },
+  { q: 'Choose the LIE regarding metabolic counter-regulations:', o: ['Glucagon is secreted by β-cells.', 'Type 1 diabetes results from the destruction of pancreatic β-cells.', 'Insulin lowers blood glucose levels.'], a: 0 },
+  { q: 'Choose the LIE regarding qualitative biochemical identification:', o: ['The biuret test detects peptide bonds.', 'Ninhydrin gives a purple color with most amino acids.', 'Millon\'s test detects sulfur-containing amino acids.'], a: 2 },
+  { q: 'Choose the LIE regarding comparative compound acidity:', o: ['Ethers are more acidic than alcohols.', 'Alcohols generally have higher boiling points than alkanes of similar molecular weight.', 'Carboxylic acids are stronger acids than phenols.'], a: 0 },
+  { q: 'Choose the LIE regarding calcium homeostatic endocrine loop:', o: ['Thyroxine contains iodine.', 'Parathyroid hormone decreases blood calcium levels.', 'Calcitonin decreases blood calcium levels.'], a: 1 },
+  { q: 'Choose the LIE regarding physiological gas transport mechanics:', o: ['Oxygen is mainly transported by hemoglobin.', 'Carbon dioxide is mostly transported as bicarbonate ions.', 'Surfactant increases alveolar surface tension.'], a: 2 },
+  { q: 'Choose the LIE regarding lipid profiles structural biology:', o: ['HDL is commonly called "bad cholesterol."', 'Cholesterol is a precursor of steroid hormones.', 'Triglycerides are the main storage form of fat.'], a: 0 },
+  { q: 'Choose the LIE regarding pharmacodynamics receptor concepts:', o: ['An agonist activates a receptor.', 'All drugs produce their effects by binding to DNA.', 'An antagonist blocks receptor action.'], a: 1 },
+  { q: 'Choose the LIE regarding transmembrane transport systems:', o: ['The plasma membrane follows the fluid-mosaic model.', 'Cholesterol helps regulate membrane fluidity.', 'Simple diffusion requires ATP.'], a: 2 },
+  { q: 'Choose the LIE regarding bacterial endospores properties:', o: ['Endospores produced by certain Bacillus species exhibit remarkable resistance to adverse environmental conditions.', 'Endospores function primarily as reproductive structures that increase bacterial numbers.', 'Clostridium species are capable of endospore formation.'], a: 1 },
+  { q: 'Choose the LIE regarding differential staining workflows:', o: ['Crystal violet acts as the primary stain in Gram staining.', 'Gram-negative bacteria retain the crystal violet–iodine complex following alcohol decolorization.', 'Safranin is commonly employed as a counterstain.'], a: 1 },
+  { q: 'Choose the LIE regarding micro-organism lifecycle dynamics:', o: ['During the logarithmic phase, bacterial cells divide at an exponential rate.', 'Secondary metabolites such as antibiotics are frequently associated with the stationary phase.', 'Cell death exceeds cell division during the lag phase.'], a: 2 },
+  { q: 'Choose the LIE regarding diagnostic media types:', o: ['MacConkey agar differentiates lactose fermenters from non-lactose fermenters.', 'Nutrient agar is classified as a selective medium.', 'Blood agar may be used to observe hemolytic reactions.'], a: 1 },
+  { q: 'Choose the LIE regarding compressed solid compression defects:', o: ['Capping refers to the complete or partial separation of the crown of a compressed tablet.', 'Picking may occur when formulation material adheres to the punch face.', 'Mottling refers specifically to variation in tablet thickness.'], a: 2 },
+  { q: 'Choose the LIE regarding mass transfer kinetics:', o: ['The Noyes–Whitney equation correlates dissolution rate with surface area and concentration gradient.', 'Reduction of particle size may enhance dissolution by increasing available surface area.', 'Dissolution rate remains unaffected by temperature changes.'], a: 2 },
+  { q: 'Choose the LIE regarding structured dispersed phase physics:', o: ['Controlled flocculation is often employed to minimize cake formation.', 'Flocculated suspensions settle rapidly but are generally easy to redisperse.', 'Deflocculated suspensions always redisperse more readily than flocculated systems.'], a: 2 },
+  { q: 'Choose the LIE regarding electrophilic aromatic substitutions systems:', o: ['Nitro groups are strongly deactivating and meta-directing substituents in electrophilic aromatic substitution.', 'Alkyl substituents generally activate the aromatic ring toward electrophilic attack.', 'Nitro groups predominantly direct incoming electrophiles to the ortho position.'], a: 2 },
+  { q: 'Choose the LIE regarding organic acid thermophysical dynamics:', o: ['Carboxylic acids frequently exist as hydrogen-bonded dimers in the liquid phase.', 'Carboxylic acids generally possess higher boiling points than corresponding hydrocarbons.', 'Carboxylic acids are weaker acids than alcohols.'], a: 2 },
+  { q: 'Choose the LIE regarding conformational analysis configurations:', o: ['The staggered conformation minimizes torsional strain in ethane.', 'Torsional strain contributes to the instability of eclipsed conformations.', 'Ethane exists exclusively in a staggered conformation at room temperature.'], a: 2 },
+  { q: 'Choose the LIE regarding muscarinic blocking actions:', o: ['Atropine competitively antagonizes muscarinic cholinergic receptors.', 'Acetylcholine serves as the principal neurotransmitter of the parasympathetic nervous system.', 'Atropine stimulates muscarinic receptors to increase glandular secretion.'], a: 2 },
+  { q: 'Choose the LIE regarding adrenergic target selectivities:', o: ['Salbutamol demonstrates relative selectivity toward β₂-adrenergic receptors.', 'Activation of β₂ receptors may result in bronchodilation.', 'Propranolol functions as a selective β₂ agonist.'], a: 2 },
+  { q: 'Choose the LIE regarding prostaglandin pathway modulators:', o: ['Aspirin irreversibly acetylates cyclooxygenase enzymes.', 'Prostaglandin synthesis is reduced by cyclooxygenase inhibition.', 'NSAIDs exert their therapeutic effect primarily through stimulation of prostaglandin production.'], a: 2 },
+  { q: 'Choose the LIE regarding histopathology of acute phases:', o: ['Histamine contributes to vasodilation and increased vascular permeability.', 'Neutrophils are among the first leukocytes recruited during acute inflammation.', 'Fibrosis is the hallmark initiating event of acute inflammation.'], a: 2 },
+  { q: 'Choose the LIE regarding chronic circulatory disorders features:', o: ['Persistent activation of the renin–angiotensin–aldosterone system may contribute to hypertension.', 'Hypertension may remain asymptomatic for many years.', 'Hypertension invariably produces severe clinical symptoms.'], a: 2 },
+  { q: 'Choose the LIE regarding obstructive lung disease pathomorphology:', o: ['Airway hyperresponsiveness is characteristic of bronchial asthma.', 'Eosinophilic inflammation is commonly associated with allergic asthma.', 'Asthma is primarily caused by irreversible alveolar destruction.'], a: 2 },
+  { q: 'Choose the LIE regarding endocrine secondary complications cascades:', o: ['Autoimmune destruction of pancreatic β-cells is characteristic of Type 1 diabetes mellitus.', 'Chronic hyperglycemia contributes to microvascular complications.', 'Diabetes mellitus is fundamentally a disorder of antidiuretic hormone secretion.'], a: 2 },
+  { q: 'Choose the LIE regarding cellular taxonomy variations:', o: ['Candida albicans is classified as a yeast-like fungus.', 'Fungi are prokaryotic organisms lacking membrane-bound organelles.', 'Fungal cells possess a true nucleus.'], a: 1 },
+  { q: 'Choose the LIE regarding aliphatic alcohols structures classifications:', o: ['Tertiary alcohols generally resist oxidation under mild oxidizing conditions.', 'Primary alcohols may be oxidized to aldehydes.', 'Methanol is classified as a tertiary alcohol.'], a: 2 },
+  { q: 'Choose the LIE regarding metabolic phase pathways allocations:', o: ['Cytochrome P450 isoenzymes are heavily involved in Phase I biotransformation reactions.', 'Oxidation represents a common Phase I metabolic pathway.', 'Glucuronidation is categorized as a Phase I metabolic reaction.'], a: 2 },
+  { q: 'Choose the LIE regarding systemic drug absorption parameter metrics:', o: ['Intravenous administration yields complete systemic bioavailability.', 'First-pass metabolism may reduce the bioavailability of orally administered drugs.', 'Bioavailability refers exclusively to the rate of drug absorption.'], a: 2 },
+  { q: 'Choose the LIE regarding microvascular fluid shifts etiologies:', o: ['Reduced plasma oncotic pressure may contribute to edema formation.', 'Increased capillary hydrostatic pressure may promote fluid accumulation in tissues.', 'Edema invariably results from excessive erythrocyte production.'], a: 2 },
+  { q: 'Choose the LIE regarding target antihistamines actions traits:', o: ['H₁ receptor antagonists are frequently used in allergic disorders.', 'First-generation antihistamines may cause sedation by crossing the blood-brain barrier.', 'Antihistamines increase histamine release from mast cells.'], a: 2 },
+  { q: 'Choose the LIE regarding organic basicity structural shifts:', o: ['The lone pair on aniline participates in resonance with the aromatic ring.', 'Aromatic amines are generally more basic than aliphatic amines.', 'Amines can function as Lewis bases.'], a: 1 },
+{ q: 'Choose the LIE regarding structural latency design parameters:', o: ['A prodrug undergoes biotransformation to generate the active therapeutic agent.', 'Enalapril is commonly cited as an example of a prodrug.', 'All prodrugs are pharmacologically active before metabolic conversion.'], a: 2 }
+];
+
+function shuffleArr(a){
+for(var i=a.length-1;i>0;i--){
+var j=Math.floor(Math.random()*(i+1));
+var tmp=a[i]; a[i]=a[j]; a[j]=tmp;
+}
+}
+
+function shuffleAll(){
+G.questionsShuffle=[].concat(QUESTIONS); shuffleArr(G.questionsShuffle);
+}
+shuffleAll();
+
+function buildRevivalPool(){ G.revivalQPool=[].concat(QUESTIONS); shuffleArr(G.revivalQPool); }
+function buildBeehivePool(){ G.beehiveQPool=[].concat(QUESTIONS); shuffleArr(G.beehiveQPool); }
+
+/* ================================================================
+SHARED NOISE HELPER -- deterministic per-call pseudo-noise used to
+perturb stroke paths so foliage/bark/grass reads as organic rather
+than smooth vector fills. [K5]
+================================================================ */
+function noiseRng(seed){ var s=(seed||1)>>>0; return function(){ s=(s*1664525+1013904223)>>>0; return (s&0xfffffff)/0xfffffff; }; }
+
+/* ================================================================
+BACKGROUND CACHES
+[J5] ONLY two side trees -- center tree drawing removed entirely.
+[J6/K5] Foliage palette locked to #2D5A27 / #417136, now rendered
+with layered organic stroke noise instead of flat radial blobs.
+================================================================ */
+var skyGradCache=null;
+function getSkyGradient(){
+if(skyGradCache) return skyGradCache;
+var sky=ctx.createLinearGradient(0,0,0,BH*0.82);
+sky.addColorStop(0,'#473a6e');
+sky.addColorStop(0.12,'#5c4c79');
+sky.addColorStop(0.26,'#7a5985');
+sky.addColorStop(0.40,'#9c6c8c');
+sky.addColorStop(0.54,'#c07d8c');
+sky.addColorStop(0.66,'#dd9a90');
+sky.addColorStop(0.76,'#f2b89c');
+sky.addColorStop(0.86,'#f9d5b2');
+sky.addColorStop(0.94,'#fce6c8');
+sky.addColorStop(1,'#f4ddbf');
+skyGradCache=sky;
+return sky;
+}
+
+var leftTreeCache=null,rightTreeCache=null,mistCache=null;
+var TREE_CACHE_W=340,TREE_CACHE_H=BH;
+
+function buildTreeCaches(){
+safe(function(){
+leftTreeCache=document.createElement('canvas');
+leftTreeCache.width=TREE_CACHE_W; leftTreeCache.height=TREE_CACHE_H;
+drawCanopyTree(leftTreeCache.getContext('2d'),TREE_CACHE_W,TREE_CACHE_H,'left');
+
+rightTreeCache=document.createElement('canvas');
+rightTreeCache.width=TREE_CACHE_W; rightTreeCache.height=TREE_CACHE_H;
+drawCanopyTree(rightTreeCache.getContext('2d'),TREE_CACHE_W,TREE_CACHE_H,'right');
+
+mistCache=document.createElement('canvas'); mistCache.width=BW; mistCache.height=BH;
+drawDawnMist(mistCache.getContext('2d'),BW,BH);
+/* [J5] centerTreeCache intentionally not built -- no center tree */
+});
+}
+
+/* [K5] Organic bark rendering: layered linear+radial gradients with
+deep bark/shadow hues (#4A3B32, #2B1E17), plus per-strand noise-
+perturbed vertical fissure strokes so the trunk silhouette reads as
+rough fibrous wood rather than a flat vector fill. */
+function drawBarkTrunk(cc,trunkCX,trunkW,trunkTop,H,isLeft,seed){
+var rngBark=noiseRng(seed);
+/* Base trunk silhouette uses a wide multi-stop gradient anchored on
+the requested deep bark tones, layered over the prior warm-brown
+palette so dawn light still grazes the right edge. */
+var tg=cc.createLinearGradient(trunkCX-trunkW/2,0,trunkCX+trunkW/2,0);
+tg.addColorStop(0,'#1c130a');
+tg.addColorStop(0.16,'#2B1E17');
+tg.addColorStop(0.40,'#4A3B32');
+tg.addColorStop(0.62,'#5a4530');
+tg.addColorStop(0.84,'#3a2812');
+tg.addColorStop(1,'#150d05');
+cc.fillStyle=tg;
+cc.beginPath();
+if(isLeft){
+cc.moveTo(trunkCX-trunkW*0.62,H);
+cc.bezierCurveTo(trunkCX-trunkW*0.68,H*0.55,trunkCX-trunkW*0.40,H*0.30,trunkCX-trunkW*0.22,trunkTop);
+cc.lineTo(trunkCX+trunkW*0.55,trunkTop+8);
+cc.bezierCurveTo(trunkCX+trunkW*0.50,H*0.32,trunkCX+trunkW*0.60,H*0.58,trunkCX+trunkW*0.68,H);
+} else {
+cc.moveTo(trunkCX+trunkW*0.62,H);
+cc.bezierCurveTo(trunkCX+trunkW*0.68,H*0.55,trunkCX+trunkW*0.40,H*0.30,trunkCX+trunkW*0.22,trunkTop);
+cc.lineTo(trunkCX-trunkW*0.55,trunkTop+8);
+cc.bezierCurveTo(trunkCX-trunkW*0.50,H*0.32,trunkCX-trunkW*0.60,H*0.58,trunkCX-trunkW*0.68,H);
+}
+cc.closePath(); cc.fill();
+
+cc.save(); cc.clip();
+
+/* Radial knot-shadow patches: irregular dark radial blotches that
+break up the flat fill the way real bark scarring does. */
+var knotCount=6;
+for(var kk=0;kk<knotCount;kk++){
+var ky=trunkTop+30+rngBark()*(H-trunkTop-60);
+var kx=trunkCX+(rngBark()-0.5)*trunkW*0.7;
+var kr=10+rngBark()*22;
+var kg=cc.createRadialGradient(kx,ky,1,kx,ky,kr);
+kg.addColorStop(0,'rgba(21,13,5,0.55)');
+kg.addColorStop(0.5,'rgba(43,30,23,0.30)');
+kg.addColorStop(1,'rgba(43,30,23,0)');
+cc.fillStyle=kg;
+cc.beginPath(); cc.ellipse(kx,ky,kr*0.7,kr,rngBark()*Math.PI,0,Math.PI*2); cc.fill();
+}
+
+/* Dense noise-perturbed vertical fissure strokes -- each one wanders
+slightly via small per-segment jitter rather than a single smooth
+bezier, producing a fibrous, non-cartoon bark texture. */
+var fissureCount=16;
+for(var bk=0;bk<fissureCount;bk++){
+var bkx=trunkCX+(isLeft?-trunkW*0.46:trunkW*0.46)+bk*(trunkW*0.92/fissureCount)*(isLeft?1:-1);
+var segs=9;
+var jitterAmp=3.2+rngBark()*2.2;
+cc.beginPath();
+var curX=bkx,curY=H;
+cc.moveTo(curX,curY);
+for(var sgi=1;sgi<=segs;sgi++){
+var py=H-(sgi/segs)*(H-trunkTop-20);
+var px=bkx+Math.sin(sgi*1.7+bk*0.9)*jitterAmp+(rngBark()-0.5)*jitterAmp*1.4;
+cc.lineTo(px,py);
+curX=px; curY=py;
+}
+var darkness=0.22+rngBark()*0.28;
+cc.strokeStyle='rgba(12,7,3,'+darkness.toFixed(3)+')';
+cc.lineWidth=1+rngBark()*1.6;
+cc.stroke();
+/* Thin highlight sliver just beside each fissure -- catches dawn light */
+cc.beginPath();
+cc.moveTo(curX+1.4,H);
+for(var sgi2=1;sgi2<=segs;sgi2++){
+var py2=H-(sgi2/segs)*(H-trunkTop-20);
+var px2=bkx+1.6+Math.sin(sgi2*1.7+bk*0.9)*jitterAmp+(rngBark()-0.5)*jitterAmp*1.4;
+cc.lineTo(px2,py2);
+}
+cc.strokeStyle='rgba(122,92,58,'+(0.10+rngBark()*0.10).toFixed(3)+')';
+cc.lineWidth=0.8;
+cc.stroke();
+}
+
+/* Horizontal bark plate breaks -- short irregular ridges */
+var plateRows=10;
+for(var pr=0;pr<plateRows;pr++){
+var ry=trunkTop+20+(pr/plateRows)*(H-trunkTop-40)+rngBark()*10;
+var segCount=3+Math.floor(rngBark()*3);
+for(var sgc=0;sgc<segCount;sgc++){
+var rx0=trunkCX+(isLeft?-trunkW*0.5:-trunkW*0.06)+rngBark()*trunkW*0.56*(isLeft?1:1);
+var rw=8+rngBark()*16;
+cc.strokeStyle='rgba(8,5,2,'+(0.14+rngBark()*0.16).toFixed(3)+')';
+cc.lineWidth=1+rngBark()*1.2;
+cc.beginPath();
+cc.moveTo(rx0,ry);
+cc.quadraticCurveTo(rx0+rw*0.5,ry+2+rngBark()*3,rx0+rw,ry-1+rngBark()*3);
+cc.stroke();
+}
+}
+
+cc.restore();
+
+/* Soft ambient occlusion along the inner curve to seat the trunk
+against the canopy above it. */
+var aoGrad=cc.createLinearGradient(trunkCX-trunkW*0.7,0,trunkCX+trunkW*0.7,0);
+aoGrad.addColorStop(0,'rgba(8,5,2,0.30)');
+aoGrad.addColorStop(0.5,'rgba(8,5,2,0)');
+aoGrad.addColorStop(1,'rgba(8,5,2,0.30)');
+cc.save(); cc.globalCompositeOperation='multiply'; cc.fillStyle=aoGrad;
+cc.beginPath();
+if(isLeft){
+cc.moveTo(trunkCX-trunkW*0.62,H);
+cc.bezierCurveTo(trunkCX-trunkW*0.68,H*0.55,trunkCX-trunkW*0.40,H*0.30,trunkCX-trunkW*0.22,trunkTop);
+cc.lineTo(trunkCX+trunkW*0.55,trunkTop+8);
+cc.bezierCurveTo(trunkCX+trunkW*0.50,H*0.32,trunkCX+trunkW*0.60,H*0.58,trunkCX+trunkW*0.68,H);
+} else {
+cc.moveTo(trunkCX+trunkW*0.62,H);
+cc.bezierCurveTo(trunkCX+trunkW*0.68,H*0.55,trunkCX+trunkW*0.40,H*0.30,trunkCX+trunkW*0.22,trunkTop);
+cc.lineTo(trunkCX-trunkW*0.55,trunkTop+8);
+cc.bezierCurveTo(trunkCX-trunkW*0.50,H*0.32,trunkCX-trunkW*0.60,H*0.58,trunkCX-trunkW*0.68,H);
+}
+cc.closePath(); cc.fill();
+cc.restore();
+}
+
+/* [K5] Organic canopy foliage: instead of smooth radial-gradient
+blobs, each cluster is built from many small noise-jittered leaf
+dabs with irregular edges, layered dark-to-light, so the silhouette
+reads as a mass of individual leaves rather than a flat cartoon
+puff. Palette stays locked to #2D5A27 / #417136 per [J6]. */
+function drawFoliageCluster(cc,cl,seedBase){
+var rng2=noiseRng(seedBase);
+/* Underlayer: soft dark mass establishes overall silhouette */
+var baseGrad=cc.createRadialGradient(cl.cx-cl.rx*0.15,cl.cy-cl.ry*0.15,2,cl.cx,cl.cy,Math.max(cl.rx,cl.ry));
+baseGrad.addColorStop(0,'rgba(65,113,54,0.55)');
+baseGrad.addColorStop(0.6,'rgba(45,90,39,0.42)');
+baseGrad.addColorStop(1,'rgba(28,64,24,0)');
+cc.fillStyle=baseGrad;
+cc.beginPath(); cc.ellipse(cl.cx,cl.cy,cl.rx,cl.ry,0,0,Math.PI*2); cc.fill();
+
+/* Leaf-dab layer: many small irregular ellipses/teardrops with
+randomized rotation and slightly varied moss tones, overlapping
+densely to break up any smooth edge. */
+var dabCount=cl.n*7;
+for(var di=0;di<dabCount;di++){
+var ang=rng2()*Math.PI*2;
+var rad=Math.pow(rng2(),0.62);
+var dx=cl.cx+Math.cos(ang)*cl.rx*rad;
+var dy=cl.cy+Math.sin(ang)*cl.ry*rad;
+var leafLen=3.5+rng2()*6.5;
+var leafW=1.6+rng2()*3.0;
+var rot=rng2()*Math.PI*2;
+var toneRoll=rng2();
+var leafColor;
+if(toneRoll<0.30) leafColor='rgba(92,158,72,';
+else if(toneRoll<0.66) leafColor='rgba(65,113,54,';
+else leafColor='rgba(45,90,39,';
+var edgeFalloff=1-rad;
+var alpha=(0.35+rng2()*0.45)*Math.max(0.25,edgeFalloff);
+cc.save();
+cc.translate(dx,dy); cc.rotate(rot);
+cc.fillStyle=leafColor+alpha.toFixed(3)+')';
+cc.beginPath();
+cc.moveTo(0,-leafLen*0.5);
+cc.quadraticCurveTo(leafW,0,0,leafLen*0.5);
+cc.quadraticCurveTo(-leafW,0,0,-leafLen*0.5);
+cc.closePath(); cc.fill();
+cc.restore();
+}
+
+/* Sparse bright fleck pass -- catches dawn light on leaf edges */
+var fleckCount=Math.floor(cl.n*1.6);
+for(var fi=0;fi<fleckCount;fi++){
+var fang=rng2()*Math.PI*2;
+var frad=Math.pow(rng2(),0.8)*0.85;
+var fx=cl.cx+Math.cos(fang)*cl.rx*frad;
+var fy=cl.cy+Math.sin(fang)*cl.ry*frad;
+cc.fillStyle='rgba(150,205,120,'+(0.10+rng2()*0.16).toFixed(3)+')';
+cc.beginPath(); cc.ellipse(fx,fy,1.1+rng2()*1.6,0.6+rng2()*1.0,rng2()*Math.PI,0,Math.PI*2); cc.fill();
+}
+}
+
+/* [J6] Moss/sage green foliage palette: #2D5A27 deep, #417136 mid, lighter highlight */
+function drawCanopyTree(cc,W,H,side){
+safe(function(){
+var isLeft=(side==='left');
+var trunkCX=isLeft?W*0.58:W*0.42;
+var trunkW=58;
+var trunkTop=H*0.10;
+
+/* [K5] Replaced flat trunk fill with layered organic bark routine */
+drawBarkTrunk(cc,trunkCX,trunkW,trunkTop,H,isLeft,isLeft?5021:8307);
+
+var convergeX=isLeft?W*1.02:W*-0.02;
+var branches=[
+{ax:trunkCX,ay:trunkTop+14,bx:convergeX,by:H*0.01,w:20},
+{ax:trunkCX,ay:trunkTop+44,bx:isLeft?W*0.86:W*0.14,by:H*0.05,w:16},
+{ax:trunkCX,ay:trunkTop+30,bx:isLeft?W*0.30:W*0.70,by:H*0.09,w:13},
+{ax:trunkCX,ay:trunkTop+78,bx:isLeft?W*0.95:W*0.05,by:H*0.14,w:11},
+{ax:trunkCX+(isLeft?10:-10),ay:trunkTop+108,bx:isLeft?W*0.60:W*0.40,by:H*0.04,w:9},
+{ax:trunkCX,ay:trunkTop+140,bx:isLeft?W*0.34:W*0.66,by:H*0.10,w:8},
+{ax:trunkCX,ay:trunkTop+170,bx:isLeft?W*0.10:W*0.90,by:H*0.20,w:7}
+];
+var branchRng=noiseRng(isLeft?2210:6630);
+branches.forEach(function(b){
+/* [K5] Branch gradient now pulls from the same deep bark tones */
+var bg=cc.createLinearGradient(b.ax,b.ay,b.bx,b.by);
+bg.addColorStop(0,'rgba(74,59,50,0.97)');
+bg.addColorStop(0.5,'rgba(43,30,23,0.88)');
+bg.addColorStop(1,'rgba(21,13,5,0.74)');
+cc.strokeStyle=bg; cc.lineWidth=b.w; cc.lineCap='round';
+cc.beginPath(); cc.moveTo(b.ax,b.ay);
+var mx=(b.ax+b.bx)/2+(isLeft?-26:26);
+var my=(b.ay+b.by)/2-16;
+cc.quadraticCurveTo(mx,my,b.bx,b.by);
+cc.stroke();
+/* Thin bark-fissure line riding along each branch for texture */
+cc.strokeStyle='rgba(12,7,3,0.30)'; cc.lineWidth=Math.max(1,b.w*0.14);
+cc.beginPath(); cc.moveTo(b.ax,b.ay-b.w*0.18);
+cc.quadraticCurveTo(mx,my-b.w*0.12,b.bx,b.by-b.w*0.10);
+cc.stroke();
+});
+
+/* [J6/K5] Foliage clusters -- now drawn via drawFoliageCluster for
+layered, noise-perturbed leaf texture instead of flat radial fills */
+var clusters=[
+{cx:isLeft?W*0.34:W*0.66,cy:H*0.06,rx:W*0.58,ry:H*0.22,n:13},
+{cx:isLeft?W*0.10:W*0.90,cy:H*0.12,rx:W*0.46,ry:H*0.20,n:11},
+{cx:isLeft?W*0.44:W*0.56,cy:H*0.16,rx:W*0.50,ry:H*0.18,n:10},
+{cx:isLeft?W*-0.02:W*1.02,cy:H*0.05,rx:W*0.36,ry:H*0.18,n:9},
+{cx:isLeft?W*0.22:W*0.78,cy:H*0.27,rx:W*0.38,ry:H*0.16,n:8},
+{cx:isLeft?W*0.52:W*0.48,cy:H*0.05,rx:W*0.32,ry:H*0.14,n:7}
+];
+clusters.forEach(function(cl,ci){
+drawFoliageCluster(cc,cl,(isLeft?1000:4000)+ci*137+91);
+});
+
+/* Bright fringe highlights -- kept as a final organic dab pass */
+var brightCX=isLeft?W*1.0:W*0.0;
+var brightCY=H*0.045;
+var rngB=noiseRng(isLeft?991:1991);
+for(var bg2=0;bg2<7;bg2++){
+var bx3=brightCX+(rngB()-0.5)*W*0.55;
+var by3=brightCY+(rngB()-0.5)*H*0.06;
+drawFoliageCluster(cc,{cx:bx3,cy:by3,rx:W*0.11+rngB()*W*0.09,ry:H*0.07+rngB()*H*0.06,n:4},2500+bg2*53);
+}
+
+var rimGrad=cc.createLinearGradient(isLeft?W*0.5:W*0.5,0,isLeft?W:0,0);
+rimGrad.addColorStop(0,'rgba(255,210,165,0)');
+rimGrad.addColorStop(1,'rgba(255,210,165,0.15)');
+cc.fillStyle=rimGrad;
+cc.fillRect(0,0,W,H*0.5);
+});
+}
+
+function drawDawnMist(mc,W,H){
+safe(function(){
+var bands=5;
+for(var i=0;i<bands;i++){
+var by=H*0.50+i*(H*0.06);
+var alpha=0.04;
+var mg=mc.createLinearGradient(0,by-22,0,by+22);
+mg.addColorStop(0,'rgba(255,200,220,0)');
+mg.addColorStop(0.5,'rgba(255,200,220,'+alpha+')');
+mg.addColorStop(1,'rgba(255,200,220,0)');
+mc.fillStyle=mg;
+mc.fillRect(0,by-22,W,44);
+}
+});
+}
+
+var groundFringeTile=document.createElement('canvas');
+var FRINGE_TILE_W=360,FRINGE_TILE_H=100;
+(function buildFringe(){
+groundFringeTile.width=FRINGE_TILE_W; groundFringeTile.height=FRINGE_TILE_H;
+var gc=groundFringeTile.getContext('2d');
+var fg=gc.createLinearGradient(0,0,0,FRINGE_TILE_H);
+fg.addColorStop(0,'rgba(14,18,8,0)');
+fg.addColorStop(0.5,'rgba(14,18,8,0.5)');
+fg.addColorStop(1,'rgba(8,12,5,0.78)');
+gc.fillStyle=fg;
+gc.beginPath();
+gc.moveTo(178,22);
+gc.bezierCurveTo(92,80,40,102,90,108);
+gc.bezierCurveTo(178,108,262,90,236,28);
+gc.closePath(); gc.fill();
+gc.fillStyle='rgba(16,24,10,0.45)';
+for(var f=0;f<4;f++){
+var fx=40+f*80+Math.random()*20;
+gc.save(); gc.translate(fx,FRINGE_TILE_H-6); gc.rotate((Math.random()-0.5)*0.5);
+gc.beginPath(); gc.moveTo(0,0); gc.quadraticCurveTo(-6,-30,-2,-52); gc.quadraticCurveTo(4,-30,0,0); gc.fill();
+gc.restore();
+}
+})();
+
+/* Sunrise god rays */
+function drawSunbeam(){
+    safe(function(){
+        ctx.save();
+        var t = performance.now() / 1000;
+        var beamCX = BW * 0.50;
+        var flick = 0.78 + Math.sin(t * 0.20) * 0.22;
+        var grad = ctx.createLinearGradient(beamCX - 60, 0, beamCX + 90, BH * 0.72);
+        grad.addColorStop(0, 'rgba(255,210,170,' + (0.15 * flick) + ')');
+        grad.addColorStop(0.25, 'rgba(252,182,142,' + (0.10 * flick) + ')');
+        grad.addColorStop(0.55, 'rgba(244,158,118,' + (0.05 * flick) + ')');
+        grad.addColorStop(1, 'rgba(232,146,106,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(beamCX - 55, 0); ctx.lineTo(beamCX + 55, 0);
+        ctx.lineTo(beamCX + 210, BH * 0.72); ctx.lineTo(beamCX - 110, BH * 0.72);
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+    });
+}
+var fireflies=[];
+
+for(var fi=0;fi<35;fi++){
+fireflies.push({
+x:Math.random()*BW,
+y:BH*0.15+Math.random()*BH*0.7,
+phase:Math.random()*Math.PI*2
+});
+}
+
+var godRays=[];
+(function initGodRays(){
+for(var i=0;i<6;i++){
+godRays.push({
+baseX:BW*0.30+i*58,width:36+Math.random()*56,
+angle:-0.07-Math.random()*0.07,phase:Math.random()*Math.PI*2,
+speed:0.07+Math.random()*0.09,alpha:0.038+Math.random()*0.032,
+hue:Math.random()<0.6?'255,213,175':'255,198,160'
+});
+}
+})();
+
+function drawGodRays(sx){
+    safe(function(){
+        ctx.save();
+        var t = performance.now() / 1000;
+        var breathing = 0.15 + Math.sin(t * (Math.PI / 5)) * 0.07;
+        for(var ri = 0; ri < godRays.length; ri++){
+            var r = godRays[ri];
+            var flick = 0.7 + Math.sin(t * r.speed + r.phase) * 0.3;
+            var rx = ((r.baseX - sx * 0.05) % (BW + 240) + BW + 240) % (BW + 240) - 120;
+            var topW = r.width * 0.16, botW = r.width * 1.9;
+            var botX = rx + Math.tan(r.angle) * BH * 0.86;
+            var grad = ctx.createLinearGradient(rx, 0, rx, BH * 0.86);
+            grad.addColorStop(0, 'rgba(' + r.hue + ',' + (breathing * 0.5) + ')');
+            grad.addColorStop(0.35, 'rgba(' + r.hue + ',' + (breathing * 0.3) + ')');
+            grad.addColorStop(0.75, 'rgba(' + r.hue + ',' + (r.alpha * flick * 0.15) + ')');
+            grad.addColorStop(1, 'rgba(' + r.hue + ',0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.moveTo(rx - topW / 2, 0); ctx.lineTo(rx + topW / 2, 0);
+            ctx.lineTo(botX + botW / 2, BH * 0.86); ctx.lineTo(botX - botW / 2, BH * 0.86);
+            ctx.closePath(); ctx.fill();
+        }
+        ctx.restore();
+    });
+}
+
+/* ================================================================
+CANOPY BIRDS -- strictly BLUE tropical birds, upper canopy only
+================================================================ */
+var BLUE_BIRD_PALETTES=[
+{body:'#1d5fae',wing:'#123e74',accent:'#7fb8ec',belly:'#3a78c2',hi:'#bfe0ff'},
+{body:'#1f6fb8',wing:'#154a7c',accent:'#8fc8ef',belly:'#3d85c9',hi:'#cfeaff'},
+{body:'#2a6fc0',wing:'#163760',accent:'#6fa6d8',belly:'#36679f',hi:'#a9d2f5'},
+{body:'#1864a6',wing:'#0f4170',accent:'#79b4e6',belly:'#3576b4',hi:'#bcdcff'},
+{body:'#2470c8',wing:'#143d6e',accent:'#82bdf0',belly:'#3e84c8',hi:'#d0eaff'}
+];
+
+function initCanopyBirds(){
+canopyBirds=[];
+for(var i=0;i<11;i++){
+var col=BLUE_BIRD_PALETTES[i%BLUE_BIRD_PALETTES.length];
+var perched=Math.random()<0.3;
+canopyBirds.push({
+x:Math.random()*BW,y:14+Math.random()*70,
+vx:(Math.random()-0.5)*0.6,phase:Math.random()*Math.PI*2,
+flapSpeed:2.2+Math.random()*2.0,size:18+Math.random()*16,
+color:col,turnTimer:2+Math.random()*5,perched:perched,perchTimer:perched?(2+Math.random()*4):0
+});
+}
+}
+
+function updateCanopyBirds(dt,scrollSpd){
+for(var i=0;i<canopyBirds.length;i++){
+var b=canopyBirds[i]; if(!b) continue;
+if(b.perched){
+b.perchTimer-=dt;
+if(b.perchTimer<=0){ b.perched=false; b.turnTimer=2+Math.random()*4; }
+b.x-=scrollSpd*0.05*dt;
+b.y += Math.sin(
+performance.now()/1000+
+b.phase
+)*0.8;
+if(b.x<-70) b.x=BW+40;
+continue;
+}
+b.turnTimer-=dt;
+if(b.turnTimer<=0){
+b.vx=(Math.random()-0.5)*0.8; b.turnTimer=2+Math.random()*4;
+if(Math.random()<0.18){ b.perched=true; b.perchTimer=2+Math.random()*4; }
+}
+b.x+=(b.vx-scrollSpd*0.05*dt)*60*dt;
+b.y+=Math.sin(performance.now()/1000*b.flapSpeed*0.3+b.phase)*0.28;
+b.y=Math.max(8,Math.min(86,b.y));
+if(b.x<-70) b.x=BW+40;
+if(b.x>BW+70) b.x=-40;
+}
+}
+
+function drawCanopyBirds(){
+safe(function(){
+var t=performance.now()/1000;
+for(var i=0;i<canopyBirds.length;i++){
+var b=canopyBirds[i]; if(!b) continue;
+ctx.save(); ctx.translate(b.x,b.y);
+var s=b.size;
+var flap=b.perched?0.08:Math.abs(Math.sin(t*b.flapSpeed+b.phase));
+ctx.globalAlpha=0.95;
+ctx.fillStyle=b.color.wing;
+ctx.beginPath(); ctx.moveTo(-s*0.55,0); ctx.lineTo(-s*0.98,-s*0.16);
+ctx.lineTo(-s*0.90,s*0.24); ctx.closePath(); ctx.fill();
+var bodyGrad=ctx.createLinearGradient(-s*0.5,-s*0.3,s*0.5,s*0.3);
+bodyGrad.addColorStop(0,b.color.hi);
+bodyGrad.addColorStop(0.45,b.color.body);
+bodyGrad.addColorStop(1,b.color.wing);
+ctx.fillStyle=bodyGrad;
+ctx.beginPath(); ctx.ellipse(0,0,s*0.6,s*0.32,0,0,Math.PI*2); ctx.fill();
+ctx.save(); ctx.translate(-s*0.1,0);
+ctx.fillStyle=b.color.wing;
+ctx.beginPath(); ctx.ellipse(-s*0.38,-flap*s*0.55,s*0.54,s*0.17,0.25,0,Math.PI*2); ctx.fill();
+ctx.beginPath(); ctx.ellipse(s*0.28,-flap*s*0.55,s*0.54,s*0.17,-0.25,0,Math.PI*2); ctx.fill();
+ctx.fillStyle=b.color.accent;
+ctx.beginPath(); ctx.ellipse(-s*0.30,-flap*s*0.40,s*0.28,s*0.09,0.25,0,Math.PI*2); ctx.fill();
+ctx.restore();
+ctx.fillStyle=b.color.belly;
+ctx.beginPath(); ctx.ellipse(s*0.05,s*0.07,s*0.32,s*0.19,0,0,Math.PI*2); ctx.fill();
+ctx.fillStyle=b.color.body;
+ctx.beginPath(); ctx.ellipse(s*0.48,-s*0.19,s*0.26,s*0.23,0,0,Math.PI*2); ctx.fill();
+ctx.fillStyle=b.color.hi;
+ctx.beginPath(); ctx.ellipse(s*0.54,-s*0.24,s*0.10,s*0.09,0,0,Math.PI*2); ctx.fill();
+ctx.fillStyle='#eef6ff'; ctx.beginPath(); ctx.arc(s*0.56,-s*0.23,s*0.09,0,Math.PI*2); ctx.fill();
+ctx.fillStyle='#0a1018'; ctx.beginPath(); ctx.arc(s*0.58,-s*0.22,s*0.05,0,Math.PI*2); ctx.fill();
+ctx.fillStyle='#e0a030';
+ctx.beginPath(); ctx.moveTo(s*0.70,-s*0.20); ctx.lineTo(s*0.86,-s*0.16); ctx.lineTo(s*0.70,-s*0.10); ctx.closePath(); ctx.fill();
+ctx.globalAlpha=1; ctx.restore();
+}
+});
+}
+
+/* ================================================================
+PEBBLES
+================================================================ */
+function drawPebbles(){
+safe(function(){
+var sx=G.scrollX;
+for(var i=0;i<pebbles.length;i++){
+var pb=pebbles[i];
+var screenX=pb.worldX-sx+BW*0.5;
+if(screenX<-pb.r*3||screenX>BW+pb.r*3) continue;
+ctx.save();
+var pg=ctx.createRadialGradient(screenX-pb.r*0.3,GROUND_Y-pb.r*0.5,0,screenX,GROUND_Y,pb.r);
+pg.addColorStop(0,'rgba('+(pb.cr+30)+','+(pb.cg+28)+','+(pb.cb+22)+',0.95)');
+pg.addColorStop(0.55,'rgba('+pb.cr+','+pb.cg+','+pb.cb+',0.80)');
+pg.addColorStop(1,'rgba('+(pb.cr-20)+','+(pb.cg-20)+','+(pb.cb-18)+',0.40)');
+ctx.fillStyle=pg;
+ctx.beginPath(); ctx.ellipse(screenX,GROUND_Y,pb.r*1.2,pb.r*0.7,0.1,0,Math.PI*2); ctx.fill();
+ctx.fillStyle='rgba(0,0,0,0.16)';
+ctx.beginPath(); ctx.ellipse(screenX+pb.r*0.4,GROUND_Y+pb.r*0.3,pb.r*1.0,pb.r*0.25,0,0,Math.PI*2); ctx.fill();
+ctx.restore();
+}
+});
+}
+
+/* ================================================================
+FULL BACKGROUND DRAW -- [J5] NO center tree rendered
+================================================================ */
+function drawBackground(){
+safe(function(){
+var sx=G.scrollX;
+ctx.fillStyle='rgba(40,30,50,0.15)';
+
+for(var m=0;m<8;m++){
+
+var mx=
+((m*350)-(sx*0.15)%2800);
+
+ctx.beginPath();
+
+ctx.moveTo(mx,GROUND_Y);
+
+ctx.lineTo(mx+120,GROUND_Y-120);
+
+ctx.lineTo(mx+240,GROUND_Y);
+
+ctx.fill();
+}
+ctx.strokeStyle='rgba(70,90,60,0.15)';
+ctx.lineWidth=5;
+
+for(var v=0;v<10;v++){
+
+var vx=
+((v*280)-(sx*0.35)%2600);
+
+ctx.beginPath();
+
+ctx.moveTo(vx,0);
+
+ctx.bezierCurveTo(
+vx+50,
+120,
+vx-50,
+240,
+vx,
+360
+);
+
+ctx.stroke();
+}
+
+ctx.fillStyle=getSkyGradient();
+ctx.fillRect(0,0,BW,BH);
+
+var sunGlow=ctx.createRadialGradient(BW*0.50,BH*0.58,0,BW*0.50,BH*0.58,BW*0.50);
+sunGlow.addColorStop(0,'rgba(255,213,160,0.34)');
+sunGlow.addColorStop(0.3,'rgba(255,170,120,0.15)');
+sunGlow.addColorStop(0.7,'rgba(226,118,88,0.07)');
+sunGlow.addColorStop(1,'rgba(206,88,66,0)');
+ctx.fillStyle=sunGlow; ctx.fillRect(0,0,BW,BH);
+var sunriseBoost=0;
+
+if(G.distance>1000)
+sunriseBoost=0.15;
+
+if(G.distance>2000)
+sunriseBoost=0.35;
+
+ctx.fillStyle=
+'rgba(255,210,120,'+
+sunriseBoost+
+')';
+
+ctx.fillRect(0,0,BW,BH);
+
+drawSunbeam();
+drawGodRays(sx);
+
+if(mistCache){
+ctx.save(); ctx.globalAlpha=0.85;
+var mfOff=((sx*0.08)%BW+BW)%BW;
+ctx.drawImage(mistCache,-mfOff,0);
+if(mfOff>0) ctx.drawImage(mistCache,BW-mfOff,0);
+ctx.globalAlpha=1; ctx.restore();
+}
+
+/* [J5] Only left and right trees -- center tree call removed entirely */
+if(leftTreeCache){
+var ltX=-sx*0.016;
+ctx.drawImage(leftTreeCache,ltX,0,TREE_CACHE_W,TREE_CACHE_H);
+}
+if(rightTreeCache){
+var rtX=BW-TREE_CACHE_W+sx*0.016;
+ctx.drawImage(rightTreeCache,rtX,0,TREE_CACHE_W,TREE_CACHE_H);
+}
+var ft=performance.now()/1000;
+
+for(var ff=0;ff<fireflies.length;ff++){
+var f=fireflies[ff];
+
+if(f.x<160 || f.x>BW-160){
+
+var alpha=
+0.2+
+0.8*Math.abs(Math.sin(ft*2+f.phase));
+
+ctx.fillStyle=
+'rgba(210,255,120,'+alpha+')';
+
+ctx.beginPath();
+
+ctx.arc(
+f.x,
+f.y+Math.sin(ft+f.phase)*2,
+1.5,
+0,
+Math.PI*2
+);
+
+ctx.fill();
+}
+}
+
+var hazeGrad=ctx.createLinearGradient(0,GROUND_Y-70,0,GROUND_Y+10);
+hazeGrad.addColorStop(0,'rgba(80,60,40,0)');
+hazeGrad.addColorStop(1,'rgba(24,18,12,0.36)');
+ctx.fillStyle=hazeGrad; ctx.fillRect(0,GROUND_Y-70,BW,80);
+
+var groundGrad=ctx.createLinearGradient(0,GROUND_Y,0,BH);
+groundGrad.addColorStop(0,'#241c14');
+groundGrad.addColorStop(0.3,'#140f0a');
+groundGrad.addColorStop(1,'#0a0705');
+ctx.fillStyle=groundGrad; ctx.fillRect(0,GROUND_Y+4,BW,BH-GROUND_Y-4);
+
+var moss=ctx.createLinearGradient(0,GROUND_Y+2,0,GROUND_Y+22);
+moss.addColorStop(0,'rgba(110,150,70,0.26)');
+moss.addColorStop(1,'rgba(70,100,40,0)');
+ctx.fillStyle=moss; ctx.fillRect(0,GROUND_Y+2,BW,20);
+
+ctx.save();
+var fringeBaseY=GROUND_Y-96;
+for(var i2=-1;i2<6;i2++){
+var px2=((i2*FRINGE_TILE_W-sx*1.05)%(BW+FRINGE_TILE_W*2)+BW+FRINGE_TILE_W*2)%(BW+FRINGE_TILE_W*2)-FRINGE_TILE_W;
+ctx.drawImage(groundFringeTile,px2,fringeBaseY);
+}
+ctx.restore();
+drawPebbles();
+});
+}
+
+/* ================================================================
+INPUT -- FORWARD-ONLY LOCK
+================================================================ */
+var keys={};
+
+window.addEventListener('keydown',function(e){
+    safe(function(){
+        ensureAudio(); startAmbient();
+        
+        // Added the new fire keys here so the screen doesn't scroll when playing
+        const gameKeys = ['Space','ArrowRight','ArrowUp','ArrowDown','KeyW','KeyD','KeyS','KeyZ','KeyX','KeyJ','KeyK'];
+        if(gameKeys.indexOf(e.code)>=0) e.preventDefault();
+        
+        // Fire: Left-hand (Z/X) or Right-hand (J/K)
+        if(e.code==='KeyZ'||e.code==='KeyX'||e.code==='KeyJ'||e.code==='KeyK') fireLaser();
+        
+        // Jump: W, Up Arrow, or Spacebar
+        if(e.code==='ArrowUp'||e.code==='KeyW'||e.code==='Space') tryJump();
+        
+        // Drop/Duck: S or Down Arrow
+        if(e.code==='ArrowDown'||e.code==='KeyS') tryDrop();
+        
+        // Move Forward: D or Right Arrow
+        if(e.code==='ArrowRight'||e.code==='KeyD') G.fwdHeld=true;
+        
+        keys[e.code]=true;
+    });
+});
+
+window.addEventListener('keyup',function(e){
+    safe(function(){
+        keys[e.code]=false;
+        if(e.code==='ArrowRight'||e.code==='KeyD') G.fwdHeld=false;
+    });
+});
+
+
+function bindTouch(el,onPress,onRelease){
+if(!el) return;
+safe(function(){
+el.addEventListener('touchstart',function(ev){ ev.preventDefault(); ensureAudio(); startAmbient(); el.classList.add('active'); onPress(); },{passive:false});
+el.addEventListener('touchend',function(ev){ ev.preventDefault(); el.classList.remove('active'); if(onRelease) onRelease(); },{passive:false});
+el.addEventListener('touchcancel',function(ev){ ev.preventDefault(); el.classList.remove('active'); if(onRelease) onRelease(); },{passive:false});
+el.addEventListener('mousedown',function(){ ensureAudio(); startAmbient(); el.classList.add('active'); onPress(); });
+el.addEventListener('mouseup',function(){ el.classList.remove('active'); if(onRelease) onRelease(); });
+el.addEventListener('mouseleave',function(){ el.classList.remove('active'); if(onRelease) onRelease(); });
+});
+}
+
+function tryJump(){
+if(!G.running||G.finishing||G.isQuestion) return;
+if(P.onGround||P.onPlatform){
+G.wasAirborne=false;
+P.vy=JUMP_VY; P.onGround=false; P.onPlatform=false; P.currentPlat=null;
+sfxJump(); emitJumpBurst();
+}
+}
+
+function tryDrop(){
+if(!G.running||G.finishing||G.isQuestion) return;
+if(P.onPlatform){ P.onPlatform=false; P.currentPlat=null; P.dropTimer=DROP_LOCK; P.vy=Math.max(P.vy,3); sfxJump(); }
+}
+
+function findNearestMicrobe(){
+return safe(function(){
+var px=P.x+P.w/2,py=P.y-P.h/2;
+var best=null,bestD=Infinity;
+for(var i=0;i<microbes.length;i++){
+var m=microbes[i]; if(!m||!m.alive) continue;
+var ddx=m.x-px,ddy=m.y-py;
+var d=ddx*ddx+ddy*ddy;
+if(d<bestD){ bestD=d; best=m; }
+}
+return best;
+},null);
+}
+
+function fireLaser(){
+if(!G.running||G.finishing||G.isQuestion) return;
+safe(function(){
+var tgt=findNearestMicrobe();
+var sy=P.y-P.h*0.55;
+if(tgt){
+var dx=tgt.x-(P.x+P.w),dy=tgt.y-sy;
+var dist=Math.max(1,Math.hypot(dx,dy));
+var speed=22;
+lasers.push({x:P.x+P.w,y:sy,w:36,h:6,vx:(dx/dist)*speed,vy:(dy/dist)*speed,active:true,target:tgt,homing:true});
+} else {
+lasers.push({x:P.x+P.w,y:sy,w:36,h:6,vx:18,vy:0,active:true,target:null,homing:false});
+}
+sfxLaser();
+});
+}
+
+bindTouch(document.getElementById('jumpBtn'),tryJump);
+bindTouch(document.getElementById('blastBtn'),fireLaser);
+bindTouch(document.getElementById('downBtn'),tryDrop);
+bindTouch(document.getElementById('fwdBtn'),function(){ G.fwdHeld=true; },function(){ G.fwdHeld=false; });
+bindTouch(document.getElementById('backBtn'),function(){ /* disabled */ },function(){ /* no-op */ });
+
+/* ================================================================
+CINEMATIC INTRO -- rebranded to JUMANJI ESCAPE
+================================================================ */
+var cinEl=document.getElementById('cinematicCanvas');
+var cinCtx=cinEl.getContext('2d');
+var CW=640,CH=360;
+cinEl.width=CW; cinEl.height=CH;
+
+function resizeCin(){
+safe(function(){
+var aw=window.innerWidth,ah=window.innerHeight,r=CW/CH;
+var dw,dh;
+if(aw/ah>r){ dh=Math.min(ah,480); dw=dh*r; } else { dw=Math.min(aw,680); dh=dw/r; }
+cinEl.style.width=dw+'px'; cinEl.style.height=dh+'px';
+});
+}
+window.addEventListener('resize',resizeCin); resizeCin();
+
+var cinS={t:0,phase:'approach',doorOpen:0,keyY:CH*0.25,keyRot:0,keyInserted:false,clankPlayed:false};
+
+function drawCinematic(){
+safe(function(){
+var t=cinS.t;
+var sg=cinCtx.createLinearGradient(0,0,0,CH);
+sg.addColorStop(0,'#2c2266'); sg.addColorStop(0.28,'#472b58');
+sg.addColorStop(0.55,'#984b56'); sg.addColorStop(0.80,'#e6ab7c');
+sg.addColorStop(0.92,'#f5cc98'); sg.addColorStop(1,'#4e6a20');
+cinCtx.fillStyle=sg; cinCtx.fillRect(0,0,CW,CH);
+
+var hglow=cinCtx.createRadialGradient(CW/2,CH*0.68,0,CW/2,CH*0.68,CW*0.55);
+hglow.addColorStop(0,'rgba(255,210,150,0.30)');
+hglow.addColorStop(1,'rgba(226,110,44,0)');
+cinCtx.fillStyle=hglow; cinCtx.fillRect(0,0,CW,CH);
+
+var dW=180,dH=280,dX=CW/2-90,dY=CH-dH-18;
+cinCtx.fillStyle='#1a2c10'; cinCtx.fillRect(dX-22,dY-14,dW+44,dH+32);
+cinCtx.strokeStyle='#52703a'; cinCtx.lineWidth=3;
+cinCtx.strokeRect(dX-22,dY-14,dW+44,dH+32);
+cinCtx.save(); cinCtx.beginPath(); cinCtx.rect(dX-22,dY-14,dW+44,dH+32); cinCtx.clip();
+var openAmt=cinS.doorOpen*(dW/2+8);
+cinCtx.fillStyle='#0e1a06'; cinCtx.fillRect(dX-openAmt,dY,dW/2+2,dH);
+cinCtx.fillRect(dX+dW/2+openAmt,dY,dW/2+2,dH);
+cinCtx.strokeStyle='#52703a'; cinCtx.lineWidth=2;
+cinCtx.strokeRect(dX-openAmt,dY,dW/2+2,dH);
+cinCtx.strokeRect(dX+dW/2+openAmt,dY,dW/2+2,dH);
+if(cinS.doorOpen>0.05){
+var gl=cinCtx.createRadialGradient(CW/2,CH/2,0,CW/2,CH/2,140*cinS.doorOpen);
+gl.addColorStop(0,'rgba(220,200,150,0.30)'); gl.addColorStop(1,'rgba(180,160,110,0)');
+cinCtx.fillStyle=gl; cinCtx.fillRect(0,0,CW,CH);
+}
+cinCtx.restore();
+
+if(!cinS.keyInserted||cinS.doorOpen<0.01){
+cinCtx.save(); cinCtx.translate(CW/2,cinS.keyY); cinCtx.rotate(cinS.keyRot);
+cinCtx.fillStyle='#6aa840'; cinCtx.strokeStyle='#2e5418'; cinCtx.lineWidth=2;
+cinCtx.beginPath(); cinCtx.ellipse(0,0,17,10,0,0,Math.PI*2); cinCtx.fill(); cinCtx.stroke();
+cinCtx.fillStyle='#82c050'; cinCtx.fillRect(13,-3,26,6);
+cinCtx.restore();
+}
+
+/* [J1] Rebranded title text */
+cinCtx.fillStyle='rgba(255,235,215,0.96)'; cinCtx.font='bold 15px Courier New'; cinCtx.textAlign='center';
+cinCtx.shadowColor='rgba(255,170,90,0.55)'; cinCtx.shadowBlur=10;
+cinCtx.fillText('JUMANJI ESCAPE',CW/2,24); cinCtx.shadowBlur=0;
+cinCtx.font='9px Courier New'; cinCtx.fillStyle='rgba(220,180,140,0.75)';
+cinCtx.fillText('DAWN SURVIVAL RUN - 2500 METERS',CW/2,40);
+
+if(cinS.phase==='doorsOpen'&&cinS.doorOpen>0.75){
+cinCtx.fillStyle='rgba(255,235,215,'+((cinS.doorOpen-0.75)*3.5)+')';
+cinCtx.font='bold 14px Courier New';
+cinCtx.fillText('DEPLOYING INTO THE BIOME...',CW/2,CH/2+18);
+}
+});
+}
+
+function runCinematic(){
+var APP=1.5,KF=2.5,KR=3.2,DO=5.0,DONE=5.5;
+var lastT=performance.now(),drums=0;
+function cinLoop(now){
+safe(function(){
+var dt2=Math.min((now-lastT)/1000,0.05); lastT=now; cinS.t+=dt2; var t=cinS.t;
+if(t<APP){
+var beat=Math.floor(t*8);
+if(beat>drums){ drums=beat; ensureAudio(); playChimeTone(75,0,0.18,0.07,'triangle'); }
+}
+if(t<APP){ cinS.phase='approach'; cinS.keyY=CH*0.25; }
+else if(t<KF){ cinS.phase='keyInsert'; var p=(t-APP)/(KF-APP); cinS.keyY=CH*0.25+(CH-128-CH*0.25)*p; }
+else if(t<KR){
+cinS.phase='keyRotate'; cinS.keyInserted=false;
+cinS.keyRot=((t-KF)/(KR-KF))*Math.PI*1.5;
+if(t>KR-0.1&&!cinS.clankPlayed){ ensureAudio(); sfxPlantSnap(); cinS.clankPlayed=true; }
+}
+else if(t<DO){ cinS.phase='doorsOpen'; cinS.keyInserted=true; cinS.doorOpen=Math.min(1,(t-KR)/(DO-KR)); }
+drawCinematic();
+});
+if(cinS.t>=DONE){ document.getElementById('cinematicOverlay').style.display='none'; startGame(); return; }
+requestAnimationFrame(cinLoop);
+}
+requestAnimationFrame(cinLoop);
+}
+
+/* ================================================================
+LETTER TRACKER HUD -- [K4] now lives inside the labelled dashboard
+================================================================ */
+var trackerBuilt=false;
+function buildTracker(){
+safe(function(){
+var el=document.getElementById('letterTracker');
+var html='',di=0;
+for(var ci=0;ci<DISPLAY_PHRASE.length;ci++){
+var ch=DISPLAY_PHRASE[ci];
+if(ch===' '){ html+='<span style="display:inline-block;width:16px"></span>'; continue; }
+html+='<span class="lSlot" data-i="'+di+'" style="color:#3a2438;text-shadow:none;font-weight:700;">'+ch+'</span>';
+di++;
+}
+el.innerHTML=html; trackerBuilt=true;
+});
+}
+
+function updateTracker(){
+if(!trackerBuilt) buildTracker();
+safe(function(){
+document.getElementById('letterTracker').querySelectorAll('.lSlot').forEach(function(s){
+if(s.classList.contains('popping')) return;
+var di=parseInt(s.getAttribute('data-i'),10);
+var lit=G.lettersCollected.has(di);
+s.style.color=lit?'#ffc820':'#3a2438';
+s.style.textShadow=lit?'0 0 8px rgba(255,200,0,0.9)':'none';
+});
+});
+}
+
+function popTracker(idx){
+if(!trackerBuilt) buildTracker();
+safe(function(){
+var s=document.getElementById('letterTracker').querySelector('.lSlot[data-i="'+idx+'"]');
+if(!s) return;
+s.classList.remove('popping'); void s.offsetWidth; s.classList.add('popping');
+var fn=function(){
+s.classList.remove('popping'); s.style.color='#ffc820'; s.style.textShadow='0 0 8px rgba(255,200,0,0.9)';
+s.removeEventListener('animationend',fn);
+};
+s.addEventListener('animationend',fn);
+});
+}
+
+/* ================================================================
+COLLISION HELPERS
+================================================================ */
+function rr(ax,ay,aw,ah,bx,by,bw,bh){
+if(ax==null||bx==null) return false;
+return ax<bx+bw&&ax+aw>bx&&ay<by+bh&&ay+ah>by;
+}
+function glow(c,b){ /* DISABLED TO PREVENT MOBILE OVERHEATING */ }
+function noGlow(){ /* DISABLED TO PREVENT MOBILE OVERHEATING */ }
+
+/* ================================================================
+DRAW FUNCTIONS
+================================================================ */
+function drawPlayer(){
+safe(function(){
+ctx.save();
+/* [J2/J3] Use exact GROW_SCALE (1.5x) and SHRINK_SCALE (0.75x) */
+var scale=G.scaleMode==='grown'?GROW_SCALE:(G.scaleMode==='shrunk'?SHRINK_SCALE:1.0);
+var anchorX=P.x+P.w/2, anchorY=P.y;
+ctx.translate(anchorX,anchorY);
+ctx.scale(scale,scale);
+ctx.translate(-P.w/2,-P.h);
+if(G.scaleMode==='grown'){
+glow('rgba(255,200,100,0.55)',16);
+ctx.strokeStyle='rgba(255,200,100,0.45)'; ctx.lineWidth=2.4;
+ctx.beginPath(); ctx.arc(P.w/2,P.h/2,P.w*0.9,0,Math.PI*2); ctx.stroke();
+}
+if(G.scaleMode==='shrunk'){
+glow('rgba(120,200,255,0.55)',14);
+ctx.strokeStyle='rgba(120,200,255,0.45)'; ctx.lineWidth=2;
+ctx.beginPath(); ctx.arc(P.w/2,P.h/2,P.w*0.85,0,Math.PI*2); ctx.stroke();
+}
+/* [K1] Blink driven by either the existing general invuln timer
+(hit by hazards) or the dedicated microbe-hit i-frame timer, so a
+microbe collision visibly flashes the mascot just like other hits. */
+var blink=(G.invulnT>0||G.microbeInvulnT>0)&&Math.floor(((G.invulnT>0?G.invulnT:G.microbeInvulnT))*10)%2===0;
+if(!blink){
+glow('rgba(255,170,90,0.3)',8);
+ctx.fillStyle='#2e3424'; ctx.fillRect(0,22,P.w,P.h-42);
+ctx.fillStyle='#3a4a2c'; ctx.fillRect(0,4,P.w,22);
+ctx.fillStyle='#9c7850'; ctx.fillRect(8,-15,P.w-16,18);
+ctx.fillStyle='#2a2410'; ctx.fillRect(4,-24,P.w-8,11);
+ctx.fillStyle='#0e0700'; ctx.fillRect(12,-9,5,5); ctx.fillRect(P.w-17,-9,5,5);
+ctx.fillStyle='rgba(120,255,200,0.55)'; ctx.fillRect(13,-8,2,2); ctx.fillRect(P.w-16,-8,2,2);
+ctx.fillStyle='#1c1810'; ctx.fillRect(1,P.h-19,15,19); ctx.fillRect(P.w-16,P.h-19,15,19);
+}
+ctx.restore(); noGlow();
+});
+}
+
+/* Rock geometry for platform edges */
+function seededRng(seed){ var s=seed||1; return function(){ s=(s*16807)%2147483647; return (s-1)/2147483646; }; }
+
+function buildRockCluster(seed,edgeWidth){
+var rng=seededRng(seed);
+var rocks=[]; var count=3+Math.floor(rng()*3);
+for(var i=0;i<count;i++){
+rocks.push({ox:rng()*edgeWidth*0.7,oy:-(rng()*10),r:7+rng()*9,jag:0.55+rng()*0.35,rot:rng()*Math.PI*2,pts:5+Math.floor(rng()*3)});
+}
+return rocks;
+}
+
+function drawRockShape(cx,cy,rock){
+var sides=rock.pts;
+ctx.beginPath();
+for(var i=0;i<=sides;i++){
+var ang=rock.rot+(i/sides)*Math.PI*2;
+var rad=rock.r*(1-rock.jag*0.5+Math.sin(i*2.7+rock.rot)*rock.jag*0.5);
+var px=cx+Math.cos(ang)*rad; var py=cy+Math.sin(ang)*rad*0.78;
+if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+}
+ctx.closePath();
+}
+
+function drawRockCluster(rocks,edgeX,baseY,mirrored){
+    for(var i=0;i<rocks.length;i++){
+        var rk=rocks[i];
+        var cx=mirrored?edgeX-rk.ox:edgeX+rk.ox;
+        var cy=baseY+rk.oy;
+        ctx.save();
+        
+        /* PERFORMANCE FIX: Swap heavy Radial Gradient for a solid dark stone color */
+        ctx.fillStyle='#4A3B32'; 
+        
+        drawRockShape(cx,cy,rk); ctx.fill();
+        ctx.strokeStyle='rgba(20,16,12,0.55)'; ctx.lineWidth=1.2; ctx.stroke();
+        ctx.fillStyle='rgba(0,0,0,0.30)';
+        ctx.beginPath(); ctx.ellipse(cx+(mirrored?-rk.r*0.3:rk.r*0.3),cy+rk.r*0.55,rk.r*0.85,rk.r*0.22,0,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+    }
+}
+
+/* [K5] Blade-by-blade organic grass renderer for mossy/stone platform
+tops. Builds a deterministic per-platform blade field (cached on the
+platform object the first time it is drawn) using alternating soft
+green strokes with subtle height/width/lean variation, rather than a
+flat green rectangle/block. */
+function buildGrassField(seed,widthPx){
+var rng=seededRng(seed);
+var blades=[];
+var bladeSpacing=2.6;
+var count=Math.max(6,Math.floor(widthPx/bladeSpacing));
+var palette=['#3B6B2F','#264A1E','#4E8042'];
+for(var i=0;i<count;i++){
+var bx=(i+0.5)*bladeSpacing+(rng()-0.5)*1.4;
+var h=5+rng()*7;
+var lean=(rng()-0.5)*3.2;
+var w=0.9+rng()*0.9;
+var colorRoll=rng();
+var color=colorRoll<0.4?palette[0]:(colorRoll<0.75?palette[1]:palette[2]);
+blades.push({bx:bx,h:h,lean:lean,w:w,color:color});
+}
+return blades;
+}
+
+function drawGrassField(p){
+    if(!p.grassField) p.grassField=buildGrassField(p.rockSeed||1,p.w);
+    var blades=p.grassField;
+    ctx.save();
+    ctx.beginPath(); /* PERFORMANCE FIX: Batch all grass into ONE single path */
+    for(var i=0;i<blades.length;i++){
+        var bl=blades[i];
+        var bx=p.x+bl.bx;
+        var baseY=p.y+1;
+        ctx.moveTo(bx,baseY);
+        ctx.lineTo(bx+bl.lean*0.6, baseY-bl.h); /* Straight lines are 10x cheaper than curves */
+    }
+    ctx.strokeStyle='#3B6B2F'; 
+    ctx.lineWidth=1.5;
+    ctx.lineCap='round';
+    ctx.stroke(); /* Stroke exactly once per platform, instead of 40 times! */
+    ctx.restore();
+}
+
+function drawPlatform(p){
+if(!p) return;
+safe(function(){
+ctx.save();
+switch(p.type){
+case 'stone':{
+    var sg=ctx.createLinearGradient(p.x,p.y,p.x,p.y+p.h);
+    sg.addColorStop(0,'#7a7268'); sg.addColorStop(0.4,'#5a564c'); sg.addColorStop(1,'#34302a');
+    ctx.fillStyle=sg; ctx.fillRect(p.x,p.y,p.w,p.h);
+    
+    /* PERFORMANCE FIX: Removed the massive RNG loop that drew tiny rectangles every frame */
+    ctx.fillStyle='rgba(0,0,0,0.15)'; 
+    ctx.fillRect(p.x, p.y+4, p.w, 3); /* Single fake texture line instead of 50 dots */
+    
+    ctx.strokeStyle='#181410'; ctx.lineWidth=2; ctx.strokeRect(p.x,p.y,p.w,p.h);
+    drawGrassField(p);
+    break;
+}
+case 'mossy':{
+ctx.fillStyle='#403c30'; ctx.fillRect(p.x,p.y,p.w,p.h);
+ctx.strokeStyle='#22220e'; ctx.lineWidth=1; ctx.strokeRect(p.x,p.y,p.w,p.h);
+/* [K5] Replace flat green strip with dense blade-by-blade grass */
+drawGrassField(p);
+break;
+}
+case 'bridge':{
+p.wobble+=p.wobbleDir*0.028;
+if(p.wobble>0.07||p.wobble<-0.07) p.wobbleDir*=-1;
+var pw2=18;
+for(var pi=0;pi<Math.floor(p.w/pw2);pi++){
+var px2=p.x+pi*pw2+1;
+var wg=ctx.createLinearGradient(px2,p.y,px2,p.y+p.h);
+wg.addColorStop(0,'#906230'); wg.addColorStop(1,'#603e12');
+ctx.fillStyle=wg; ctx.fillRect(px2,p.y+2,pw2-2,p.h-4);
+}
+break;
+}
+case 'log':{
+var lg=ctx.createLinearGradient(p.x,p.y,p.x,p.y+p.h);
+lg.addColorStop(0,'#7c4218'); lg.addColorStop(0.38,'#5e3210'); lg.addColorStop(1,'#34140a');
+ctx.fillStyle=lg; ctx.fillRect(p.x,p.y,p.w,p.h);
+/* [K5] Thin sparse grass fringe along the top of the log instead
+of a flat glow strip */
+drawGrassField(p);
+break;
+}
+}
+if(!p.rockClusterL) p.rockClusterL=buildRockCluster(p.rockSeed||1,34);
+if(!p.rockClusterR) p.rockClusterR=buildRockCluster((p.rockSeed||1)+7777,34);
+var baseY=p.y+p.h*0.18;
+drawRockCluster(p.rockClusterL,p.x,baseY,false);
+drawRockCluster(p.rockClusterR,p.x+p.w,baseY,true);
+ctx.restore(); noGlow();
+});
+}
+
+function drawCarniPlant(plant){
+if(!plant||!plant.alive) return;
+safe(function(){
+ctx.save();
+var bx=plant.x,by=plant.y-plant.h;
+var snap=plant.snapAnim||0;
+ctx.strokeStyle='#235c0c'; ctx.lineWidth=9; ctx.lineCap='round';
+ctx.beginPath(); ctx.moveTo(bx+plant.w/2,plant.y);
+ctx.bezierCurveTo(bx+plant.w/2-12,plant.y-22,bx+plant.w/2+10,plant.y-42,bx+plant.w/2,by+22);
+ctx.stroke();
+var mCX=bx+plant.w/2,mCY=by+16;
+glow('rgba(200,30,40,0.5)',14);
+ctx.fillStyle='#a82210'; ctx.strokeStyle='#660e06'; ctx.lineWidth=2;
+ctx.save(); ctx.translate(mCX,mCY); ctx.rotate(-snap*0.52);
+ctx.beginPath(); ctx.moveTo(-20,0); ctx.bezierCurveTo(-16,-24,16,-24,20,0); ctx.closePath(); ctx.fill(); ctx.stroke();
+ctx.restore();
+ctx.save(); ctx.translate(mCX,mCY); ctx.rotate(snap*0.52);
+ctx.beginPath(); ctx.moveTo(-20,0); ctx.bezierCurveTo(-16,24,16,24,20,0); ctx.closePath(); ctx.fill(); ctx.stroke();
+ctx.restore();
+noGlow(); ctx.restore();
+});
+}
+
+function drawMicrobe(m){
+    if(!m || !m.alive) return;
+    safe(function(){
+        ctx.save();
+        var now = performance.now() / 1000;
+        var pulse = 0.85 + Math.sin(now * 3.2 + m.pulsePhase) * 0.18;
+        
+        var mg2 = ctx.createRadialGradient(m.x - m.r * 0.35, m.y - m.r * 0.35, 1, m.x, m.y, m.r * pulse);
+        mg2.addColorStop(0, '#fff8f0'); mg2.addColorStop(0.18, m.color.core);
+        mg2.addColorStop(0.72, m.color.mid); mg2.addColorStop(1, 'rgba(0,0,0,0.4)');
+        ctx.fillStyle = mg2; ctx.beginPath(); ctx.arc(m.x, m.y, m.r * pulse, 0, Math.PI * 2); ctx.fill();
+        
+        ctx.strokeStyle = m.color.core; ctx.lineWidth = 2;
+        ctx.beginPath();
+        for(var ti = 0; ti < 5; ti++){
+            var ta = m.phase + ti * (Math.PI * 2 / 5) + now * 1.5;
+            var tl = m.r * 1.55 + Math.sin(now * 3 + ti) * m.r * 0.45;
+            ctx.moveTo(m.x, m.y);
+            ctx.lineTo(m.x + Math.cos(ta) * tl, m.y + Math.sin(ta) * tl);
+        }
+        ctx.stroke();
+        
+        ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.beginPath();
+        ctx.arc(m.x - m.r * 0.28, m.y - m.r * 0.30, m.r * 0.18, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+    });
+}
+
+function drawPowerup(p){
+if(!p||p.taken) return;
+safe(function(){
+ctx.save();
+if(p.type==='apple'){
+glow('rgba(200,20,30,0.55)',10);
+var ag=ctx.createRadialGradient(p.x+p.w/2-5,p.y+p.h/2-6,2,p.x+p.w/2,p.y+p.h/2+2,17);
+ag.addColorStop(0,'#ff6050'); ag.addColorStop(0.45,'#d81e28'); ag.addColorStop(0.8,'#8c0e14'); ag.addColorStop(1,'#5a0810');
+ctx.fillStyle=ag;
+ctx.beginPath();
+ctx.moveTo(p.x+p.w/2,p.y+p.h/2-14);
+ctx.bezierCurveTo(p.x+p.w/2+15,p.y+p.h/2-16,p.x+p.w/2+17,p.y+p.h/2+10,p.x+p.w/2+8,p.y+p.h/2+18);
+ctx.bezierCurveTo(p.x+p.w/2+3,p.y+p.h/2+22,p.x+p.w/2-3,p.y+p.h/2+22,p.x+p.w/2-8,p.y+p.h/2+18);
+ctx.bezierCurveTo(p.x+p.w/2-17,p.y+p.h/2+10,p.x+p.w/2-15,p.y+p.h/2-16,p.x+p.w/2,p.y+p.h/2-14);
+ctx.closePath(); ctx.fill();
+ctx.fillStyle='rgba(255,200,190,0.55)';
+ctx.beginPath(); ctx.ellipse(p.x+p.w/2-6,p.y+p.h/2-4,5,9,-0.3,0,Math.PI*2); ctx.fill();
+ctx.strokeStyle='#3a2010'; ctx.lineWidth=2;
+ctx.beginPath(); ctx.moveTo(p.x+p.w/2,p.y+p.h/2-14); ctx.lineTo(p.x+p.w/2+3,p.y+p.h/2-23); ctx.stroke();
+ctx.fillStyle='#30a020';
+ctx.beginPath(); ctx.ellipse(p.x+p.w/2+9,p.y+p.h/2-21,8,4,-0.5,0,Math.PI*2); ctx.fill();
+noGlow();
+ctx.fillStyle='#fff'; ctx.font='bold 9px Courier New'; ctx.textAlign='center';
+ctx.fillText('APPLE',p.x+p.w/2,p.y+p.h+10);
+} else {
+var bg=ctx.createLinearGradient(p.x,p.y,p.x,p.y+p.h);
+bg.addColorStop(0,'#4aa0e8'); bg.addColorStop(0.5,'#2870c0'); bg.addColorStop(1,'#164a8c');
+glow('rgba(70,160,230,0.6)',11);
+ctx.fillStyle=bg; ctx.fillRect(p.x,p.y,p.w,p.h);
+ctx.strokeStyle='#0c2c54'; ctx.lineWidth=2; ctx.strokeRect(p.x,p.y,p.w,p.h);
+ctx.fillStyle='rgba(180,225,255,0.55)'; ctx.fillRect(p.x+3,p.y+3,p.w-6,4); noGlow();
+ctx.fillStyle='#fff'; ctx.font='bold 8px Courier New'; ctx.textAlign='center'; ctx.textBaseline='middle';
+if(p.type==='grow'){
+/* [J2] Label: Accelerator Growth with exact +15% speed callout */
+ctx.fillText('ACCEL',p.x+p.w/2,p.y+p.h/2-5);
+ctx.font='6px Courier New';
+ctx.fillText('GROWTH',p.x+p.w/2,p.y+p.h/2+6);
+} else {
+ctx.fillText('SHRINK',p.x+p.w/2,p.y+p.h/2-4);
+ctx.font='6px Courier New';
+ctx.fillText('-SIZE',p.x+p.w/2,p.y+p.h/2+7);
+}
+ctx.textBaseline='alphabetic';
+ctx.fillStyle='#bfe0ff'; ctx.font='bold 7px Courier New';
+if(p.type==='grow'){
+ctx.fillText('ACCELERATOR GROWTH',p.x+p.w/2,p.y+p.h+10);
+} else {
+ctx.fillText('SHRINK',p.x+p.w/2,p.y+p.h+10);
+}
+}
+ctx.restore();
+});
+}
+
+function drawLetterCrate(lc){
+    if(!lc||lc.letterCollected) return;
+    safe(function(){
+        ctx.save();
+        var shake = lc.shakeTimer > 0 ? (Math.random() - 0.5) * 5 : 0;
+        ctx.translate(lc.x + shake, lc.y);
+        
+        var now2 = performance.now() / 1000;
+        
+        if(!lc.opened){
+            /* --- THE REAL GLOW FIX (GPU FRIENDLY) --- */
+            var pulse = 0.7 + Math.sin(now2 * 6) * 0.3; // Pulsing math
+            var glowSize = lc.w * 1.8 * pulse; // How far the glow reaches
+            
+            // Create a smooth, fading neon gradient instead of a flat circle
+            var glowGrad = ctx.createRadialGradient(lc.w/2, lc.h/2, lc.w * 0.3, lc.w/2, lc.h/2, glowSize);
+            glowGrad.addColorStop(0, 'rgba(255, 230, 100, 0.9)'); // Bright hot center
+            glowGrad.addColorStop(0.4, 'rgba(255, 160, 40, 0.5)'); // Warm middle
+            glowGrad.addColorStop(1, 'rgba(255, 100, 0, 0)');     // Fades to nothing perfectly
+            
+            ctx.fillStyle = glowGrad;
+            ctx.beginPath(); ctx.arc(lc.w/2, lc.h/2, glowSize, 0, Math.PI*2); ctx.fill();
+            /* ---------------------------------------- */
+            
+            ctx.fillStyle = '#ffc820'; 
+            ctx.font = 'bold 12px Courier New'; 
+            ctx.textAlign = 'center';
+            ctx.fillText('LETTER!', lc.w/2, -12 + Math.sin(now2 * 6) * 4); // Bouncing text
+
+            /* Draw the Box */
+            var lg2 = ctx.createLinearGradient(0, 0, 0, lc.h);
+            lg2.addColorStop(0, '#9a7234'); lg2.addColorStop(0.5, '#7a5824'); lg2.addColorStop(1, '#523a14');
+            ctx.fillStyle = lg2; ctx.fillRect(0, 0, lc.w, lc.h);
+            
+            ctx.strokeStyle = '#ffe850'; /* Extra bright yellow border */
+            ctx.lineWidth = 2; ctx.strokeRect(0, 0, lc.w, lc.h);
+            
+            ctx.fillStyle = '#ffc820'; ctx.font = 'bold 18px Courier New'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('?', lc.w/2, lc.h/2);
+            ctx.textBaseline = 'alphabetic';
+        } else {
+            ctx.fillStyle = 'rgba(220,180,80,0.25)'; ctx.fillRect(0, 0, lc.w, lc.h);
+            ctx.strokeStyle = 'rgba(220,180,80,0.4)'; ctx.lineWidth = 2; ctx.strokeRect(0, 0, lc.w, lc.h);
+            if(!lc.letterCollected){
+                var openP = Math.min(1, (now2 - lc.openStartTime) / 0.4);
+                ctx.fillStyle = '#ffd030'; ctx.font = 'bold 19px Courier New'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(lc.letter, lc.w/2, -openP * 40);
+                ctx.textBaseline = 'alphabetic';
+            }
+        }
+        ctx.restore();
+    });
+}
+
+function drawSpikedLog(s){
+if(!s) return;
+safe(function(){
+ctx.save();
+var lg=ctx.createLinearGradient(s.x,s.y-s.h,s.x,s.y);
+lg.addColorStop(0,'#6c3a14'); lg.addColorStop(1,'#3a1808');
+ctx.fillStyle=lg; ctx.fillRect(s.x,s.y-s.h,s.w,s.h);
+ctx.strokeStyle='#1a0804'; ctx.lineWidth=2; ctx.strokeRect(s.x,s.y-s.h,s.w,s.h);
+glow('rgba(210,190,70,0.55)',6);
+ctx.fillStyle='#d4bc48';
+var ns=Math.floor(s.w/14);
+for(var si=0;si<ns;si++){
+var sx2=s.x+7+si*14;
+ctx.beginPath(); ctx.moveTo(sx2-5,s.y-s.h); ctx.lineTo(sx2,s.y-s.h-20); ctx.lineTo(sx2+5,s.y-s.h); ctx.closePath(); ctx.fill();
+}
+noGlow(); ctx.restore();
+});
+}
+
+function drawBeehive(h){
+if(!h||h.triggered) return;
+safe(function(){
+ctx.save();
+ctx.translate(h.x+h.w/2,h.y);
+var sw=Math.sin(performance.now()/1000*1.4+h.sway)*0.07;
+ctx.rotate(sw);
+ctx.strokeStyle='#3a5018'; ctx.lineWidth=3;
+ctx.beginPath(); ctx.moveTo(0,-28); ctx.lineTo(0,0); ctx.stroke();
+var hg=ctx.createRadialGradient(0,0,4,0,0,h.w/2);
+hg.addColorStop(0,'#e0aa28'); hg.addColorStop(0.6,'#b07810'); hg.addColorStop(1,'#704c08');
+ctx.fillStyle=hg;
+glow('rgba(230,170,30,0.6)',12);
+ctx.beginPath();
+ctx.moveTo(-h.w/2,0);
+ctx.bezierCurveTo(-h.w/2,-h.h*0.6,-h.w*0.2,-h.h/2,0,-h.h/2);
+ctx.bezierCurveTo(h.w*0.2,-h.h/2,h.w/2,-h.h*0.6,h.w/2,-h.h*0.3);
+ctx.bezierCurveTo(h.w/2,h.h*0.45,h.w*0.18,h.h/2,0,h.h/2);
+ctx.bezierCurveTo(-h.w*0.18,h.h/2,-h.w/2,h.h*0.45,-h.w/2,-h.h*0.3);
+ctx.closePath(); ctx.fill();
+ctx.strokeStyle='rgba(80,50,10,0.5)'; ctx.lineWidth=1.4;
+for(var ring=1;ring<=3;ring++){
+ctx.beginPath(); ctx.ellipse(0,-h.h*0.3+ring*h.h*0.22,h.w*0.42-ring*4,6,0,0,Math.PI*2); ctx.stroke();
+}
+noGlow();
+ctx.restore();
+if(!h.bees){
+h.bees=[];
+var beeCount=5+Math.floor(Math.random()*2);
+for(var bi=0;bi<beeCount;bi++){
+h.bees.push({orbitR:18+Math.random()*22,orbitSpeed:1.4+Math.random()*1.6,orbitPhase:Math.random()*Math.PI*2,bobSpeed:5+Math.random()*4,bobPhase:Math.random()*Math.PI*2,bobAmt:4+Math.random()*5,size:2.6+Math.random()*1.6});
+}
+}
+var now=performance.now()/1000;
+var hubX=h.x+h.w/2,hubY=h.y-h.h*0.15;
+for(var bj=0;bj<h.bees.length;bj++){
+var bee=h.bees[bj];
+var ang=now*bee.orbitSpeed+bee.orbitPhase;
+var ex=hubX+Math.cos(ang)*bee.orbitR;
+var ey=hubY+Math.sin(ang)*bee.orbitR*0.6+Math.sin(now*bee.bobSpeed+bee.bobPhase)*bee.bobAmt*0.3;
+ctx.save(); ctx.translate(ex,ey);
+var wingFlap=Math.sin(now*28+bee.bobPhase)*0.5;
+ctx.fillStyle='rgba(40,30,10,0.85)';
+ctx.beginPath(); ctx.ellipse(0,0,bee.size,bee.size*0.7,0,0,Math.PI*2); ctx.fill();
+ctx.fillStyle='#f0c020';
+ctx.fillRect(-bee.size*0.5,-bee.size*0.25,bee.size,bee.size*0.18);
+ctx.fillRect(-bee.size*0.5,bee.size*0.08,bee.size,bee.size*0.18);
+ctx.fillStyle='rgba(255,255,255,0.55)';
+ctx.beginPath(); ctx.ellipse(-bee.size*0.3,-bee.size*0.9*Math.abs(wingFlap)-bee.size*0.4,bee.size*0.9,bee.size*0.4,0.3,0,Math.PI*2); ctx.fill();
+ctx.beginPath(); ctx.ellipse(bee.size*0.3,-bee.size*0.9*Math.abs(wingFlap)-bee.size*0.4,bee.size*0.9,bee.size*0.4,-0.3,0,Math.PI*2); ctx.fill();
+ctx.restore();
+}
+});
+}
+
+function drawDiamond(g){
+if(!g||g.taken) return;
+safe(function(){
+ctx.save();
+var now3=performance.now()/1000;
+var bob=Math.sin(now3*2.8+g.phase)*5;
+var rot=g.rot+now3*0.8;
+ctx.translate(g.x,g.y+bob); ctx.rotate(rot);
+var glintPulse=0.6+Math.sin(now3*4+g.phase)*0.4;
+glow(g.color,18*glintPulse);
+ctx.fillStyle=g.color;
+var r=g.r;
+ctx.beginPath();
+ctx.moveTo(0,-r*0.75); ctx.lineTo(r*0.58,-r*0.12); ctx.lineTo(r*0.58,r*0.22);
+ctx.lineTo(0,r*0.9); ctx.lineTo(-r*0.58,r*0.22); ctx.lineTo(-r*0.58,-r*0.12);
+ctx.closePath(); ctx.fill();
+ctx.fillStyle='rgba(255,255,255,0.40)';
+ctx.beginPath(); ctx.moveTo(0,-r*0.75); ctx.lineTo(r*0.58,-r*0.12); ctx.lineTo(0,r*0.12); ctx.closePath(); ctx.fill();
+noGlow(); ctx.restore();
+});
+}
+
+function drawGoldCoin(c){
+if(!c||c.taken) return;
+safe(function(){
+ctx.save();
+var now4=performance.now()/1000;
+var bob=Math.sin(now4*3.2+c.phase)*4;
+ctx.translate(c.x,c.y+bob);
+var scaleX=Math.abs(Math.cos(now4*2.5+c.spinA));
+var glint=0.4+Math.sin(now4*4+c.glintT)*0.4;
+glow('rgba(255,200,20,0.7)',12+glint*6);
+ctx.scale(Math.max(0.18,scaleX),1);
+var cg2=ctx.createRadialGradient(-c.r*0.3,-c.r*0.3,1,0,0,c.r);
+cg2.addColorStop(0,'#fff8c0'); cg2.addColorStop(0.4,'#ffd040'); cg2.addColorStop(1,'#a06010');
+ctx.fillStyle=cg2; ctx.beginPath(); ctx.arc(0,0,c.r,0,Math.PI*2); ctx.fill();
+ctx.strokeStyle='rgba(120,70,0,0.5)'; ctx.lineWidth=2; ctx.stroke();
+noGlow(); ctx.restore();
+});
+}
+
+function drawLaser(l){
+if(!l) return;
+safe(function(){
+ctx.save();
+glow('rgba(80,220,255,0.75)',10);
+ctx.fillStyle='#c0f8ff'; ctx.fillRect(l.x,l.y-l.h/2,l.w,l.h);
+ctx.fillStyle='rgba(200,255,255,0.6)'; ctx.fillRect(l.x,l.y-1,l.w,2);
+noGlow(); ctx.restore();
+});
+}
+
+/* ================================================================
+PARTICLES / FLOATING TEXT
+================================================================ */
+function addParticles(x,y,color,n){
+safe(function(){
+for(var i=0;i<(n||6);i++){
+var a=Math.random()*Math.PI*2,sp=30+Math.random()*60;
+particles.push({x:x,y:y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-20,r:2+Math.random()*3,color:color||'#fff',life:0.5,maxLife:0.5});
+}
+});
+}
+
+function addFloat(x,y,text,color,size){
+safe(function(){
+floatingTexts.push({x:x,y:y,text:text,color:color||'#fff',size:size||13,life:0.85,vy:-38});
+});
+}
+
+function drawParticles(){
+safe(function(){
+for(var i=0;i<particles.length;i++){
+var p=particles[i];
+ctx.save(); ctx.globalAlpha=Math.max(0,p.life/p.maxLife);
+ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+ctx.restore();
+}
+});
+}
+
+function drawFloatingTexts(){
+safe(function(){
+for(var i=0;i<floatingTexts.length;i++){
+var f=floatingTexts[i];
+ctx.save(); ctx.globalAlpha=Math.max(0,f.life/0.85);
+ctx.fillStyle=f.color; ctx.font='bold '+f.size+'px Courier New'; ctx.textAlign='center';
+ctx.fillText(f.text,f.x,f.y);
+ctx.restore();
+}
+});
+}
+
+function updateFloatingTexts(dt){
+for(var i=floatingTexts.length-1;i>=0;i--){
+var f=floatingTexts[i]; f.life-=dt; f.y+=f.vy*dt;
+if(f.life<=0) floatingTexts.splice(i,1);
+}
+}
+
+function updateParticles(dt){
+for(var i=particles.length-1;i>=0;i--){
+var p=particles[i]; p.life-=dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=120*dt;
+if(p.life<=0) particles.splice(i,1);
+}
+}
+
+/* ================================================================
+EMERGENCY HEART REVIVAL CHALLENGE
+[J11/J13] Strict universal 25.00s countdown timer. Correct answer
+always awards exactly 0 points and fully restores hearts. A wrong
+answer OR the timer reaching 0 instantly clears the current
+question and an immediate, brand-new question (fresh 25.00s timer)
+takes its place. This repeats indefinitely -- there is no way to
+fail out of a revival, only to eventually answer correctly.
+[K2] Clicking an answer now flashes green/red immediately and locks
+all buttons for ANSWER_FEEDBACK_DELAY_MS before the underlying
+revival/loop logic actually executes.
+================================================================ */
+function triggerRevivalQuestion(){
+if(G.ended) return;
+G.isRevivalQuestion=true; G.isQuestion=true;
+ensureAudio(); sfxAlarm();
+if(G.revivalQPool.length===0) buildRevivalPool();
+askRevival(G.revivalQPool.shift());
+}
+
+function askRevival(q){
+if(!q){ if(G.revivalQPool.length===0) buildRevivalPool(); q=G.revivalQPool.shift(); }
+safe(function(){
+if(G.revivalTimerInterval){ clearInterval(G.revivalTimerInterval); G.revivalTimerInterval=null; }
+var overlay=document.getElementById('questionOverlay');
+document.getElementById('questionTitle').textContent='DANGER - HEART REVIVAL CHALLENGE';
+document.getElementById('questionTitle').style.color='#ff4040';
+document.getElementById('questionSubtitle').textContent='Answer correctly within 25.00s to recover your health! (Always 0 pts)';
+document.getElementById('questionMultiplierHint').textContent='Wrong answer or timeout instantly generates a brand-new question.';
+document.getElementById('questionText').textContent=q.q;
+var timerEl=document.getElementById('questionTimer');
+timerEl.style.display='block'; timerEl.textContent=QUESTION_TIME_LIMIT.toFixed(0); timerEl.style.color='#ff4040';
+var fillEl=document.getElementById('questionTimerFill');
+document.getElementById('questionTimerBar').style.display='block';
+fillEl.style.width='100%';
+var btnsEl=document.getElementById('answerButtons'); btnsEl.innerHTML='';
+q.o.forEach(function(o,i){
+var b=document.createElement('button'); b.className='aBtn'; b.textContent=o;
+b.addEventListener('click',function(){ answerRevival(i,q.a,q,b); });
+btnsEl.appendChild(b);
+});
+overlay.style.display='flex';
+G.revivalElapsed=0;
+G.revivalTimerInterval=setInterval(function(){
+G.revivalElapsed+=0.1;
+var remain=Math.max(0,QUESTION_TIME_LIMIT-G.revivalElapsed);
+timerEl.textContent=Math.ceil(remain);
+fillEl.style.width=(remain/QUESTION_TIME_LIMIT*100)+'%';
+if(remain<=8){ timerEl.style.color='#ff2010'; } else if(remain<=15){ timerEl.style.color='#ff6030'; } else { timerEl.style.color='#ff4040'; }
+if(remain<=0){
+clearInterval(G.revivalTimerInterval); G.revivalTimerInterval=null;
+document.querySelectorAll('.aBtn').forEach(function(b){ b.disabled=true; });
+sfxHit();
+/* [K2] Timeout has no clicked button to flash, but we still give a
+brief beat before looping so the timeout reads as a deliberate
+state rather than an instant cut. */
+setTimeout(function(){
+if(G.revivalQPool.length===0) buildRevivalPool();
+askRevival(G.revivalQPool.shift());
+},ANSWER_FEEDBACK_DELAY_MS);
+}
+},100);
+});
+}
+
+function answerRevival(chosen,correct,q,btn){
+safe(function(){
+if(G.revivalTimerInterval){ clearInterval(G.revivalTimerInterval); G.revivalTimerInterval=null; }
+/* [K2] Lock all buttons immediately and apply an instantaneous
+correct/incorrect flash class on the clicked button before any
+scoring or looping logic runs. */
+document.querySelectorAll('.aBtn').forEach(function(b){ b.disabled=true; });
+var isCorrect=(chosen===correct);
+btn.classList.add(isCorrect?'correctFlash':'wrongFlash');
+if(isCorrect) sfxRevival(); else sfxHit();
+setTimeout(function(){
+if(isCorrect){
+/* [J13] Correct revival answer always awards exactly 0 points */
+G.hearts=G.maxHearts;
+addFloat(P.x+P.w/2,P.y-P.h-30,'REVIVED!','#ff6080',16);
+document.getElementById('questionOverlay').style.display='none';
+document.getElementById('questionTitle').textContent='JUMANJI ESCAPE CHALLENGE';
+document.getElementById('questionTitle').style.color='#ff9d50';
+document.getElementById('questionSubtitle').textContent='';
+document.getElementById('questionMultiplierHint').textContent='';
+G.isQuestion=false; G.isRevivalQuestion=false; G.invulnT=2.5;
+if(G.running){ G.lastTime=performance.now(); requestAnimationFrame(gameLoop); }
+} else {
+/* [J13] Wrong answer: instantly clear and loop a brand-new question */
+if(G.revivalQPool.length===0) buildRevivalPool();
+askRevival(G.revivalQPool.shift());
+}
+},ANSWER_FEEDBACK_DELAY_MS);
+});
+}
+
+/* ================================================================
+BEEHIVE TRIVIA CHALLENGE
+[J11/J12] Strict universal 25.00s countdown timer. Three speed
+tiers determine the score multiplier on a CORRECT answer:
+Tier 1 (fastest)  -- answered within 5.00s elapsed  -> 2.00x
+Tier 2 (medium)   -- answered 5.01s to 10.00s elapsed -> 1.75x
+Tier 3 (standard) -- answered after 10.00s elapsed   -> 1.50x
+Score awarded = multiplier * 10 * current coins collected.
+A WRONG answer OR the 25.00s timer reaching 0 awards exactly 0
+points. The pop-up closes after a brief click-feedback flash in
+either failure case -- NO new question is generated and normal
+gameplay resumes shortly after (single-chance only).
+[K2] Clicking an answer flashes green/red immediately and locks all
+buttons for ANSWER_FEEDBACK_DELAY_MS before resolution.
+================================================================ */
+function getBeehiveTier(elapsedSec){
+if(elapsedSec<=5.00) return {mult:2.00,label:'TIER 1 (FASTEST, <=5.00s): 2.00x MULTIPLIER ACTIVE!'};
+if(elapsedSec<=10.00) return {mult:1.75,label:'TIER 2 (MEDIUM, 5.01-10.00s): 1.75x MULTIPLIER ACTIVE!'};
+return {mult:1.50,label:'TIER 3 (STANDARD, >10.00s): 1.50x MULTIPLIER ACTIVE!'};
+}
+
+function getMultiplierHint(elapsed){
+return getBeehiveTier(elapsed).label;
+}
+
+function calcBeehiveScore(elapsed){
+var coins=G.coinsCollected;
+var tier=getBeehiveTier(elapsed);
+return Math.floor(tier.mult*10*coins);
+}
+
+function triggerBeehiveQuestion(){
+if(G.isQuestion) return;
+G.isQuestion=true; G.isBeehiveQuestion=true; G.beehiveElapsed=0;
+ensureAudio(); sfxBeehive(); sfxAlarm();
+if(G.beehiveQPool.length===0) buildBeehivePool();
+askBeehive(G.beehiveQPool.shift());
+}
+
+function askBeehive(q){
+if(!q){ if(G.beehiveQPool.length===0) buildBeehivePool(); q=G.beehiveQPool.shift(); }
+safe(function(){
+var overlay=document.getElementById('questionOverlay');
+document.getElementById('questionTitle').textContent='HIVE CHALLENGE - SCORE MULTIPLIER!';
+document.getElementById('questionTitle').style.color='#f0c020';
+document.getElementById('questionSubtitle').textContent='Answer fast for a BIGGER reward! Wrong answer or timeout = 0 pts, single chance only.';
+document.getElementById('questionMultiplierHint').textContent=getMultiplierHint(0);
+document.getElementById('questionText').textContent=q.q;
+var timerEl=document.getElementById('questionTimer');
+timerEl.style.display='block'; timerEl.textContent=QUESTION_TIME_LIMIT.toFixed(0); timerEl.style.color='#30e060';
+var fillEl=document.getElementById('questionTimerFill');
+document.getElementById('questionTimerBar').style.display='block';
+fillEl.style.width='100%';
+var btnsEl=document.getElementById('answerButtons'); btnsEl.innerHTML='';
+q.o.forEach(function(o,i){
+var b=document.createElement('button'); b.className='aBtn'; b.textContent=o;
+b.addEventListener('click',function(){ answerBeehive(i,q.a,q,b); });
+btnsEl.appendChild(b);
+});
+overlay.style.display='flex';
+G.beehiveElapsed=0;
+if(G.beehiveTimerInterval) clearInterval(G.beehiveTimerInterval);
+G.beehiveTimerInterval=setInterval(function(){
+G.beehiveElapsed+=0.1;
+var remain=Math.max(0,QUESTION_TIME_LIMIT-G.beehiveElapsed);
+timerEl.textContent=Math.ceil(remain);
+fillEl.style.width=(remain/QUESTION_TIME_LIMIT*100)+'%';
+document.getElementById('questionMultiplierHint').textContent=getMultiplierHint(G.beehiveElapsed);
+if(remain<=8){ timerEl.style.color='#ff4020'; } else if(remain<=15){ timerEl.style.color='#f0b020'; } else { timerEl.style.color='#30e060'; }
+if(remain<=0){
+clearInterval(G.beehiveTimerInterval); G.beehiveTimerInterval=null;
+document.querySelectorAll('.aBtn').forEach(function(b){ b.disabled=true; });
+/* [J12/K2] Timeout: 0 points; brief pause for feedback parity, then
+close immediately, no new question */
+setTimeout(function(){ closeBeehiveQuestion(0); },ANSWER_FEEDBACK_DELAY_MS);
+}
+},100);
+});
+}
+
+function answerBeehive(chosen,correct,q,btn){
+safe(function(){
+document.querySelectorAll('.aBtn').forEach(function(b){ b.disabled=true; });
+/* [K2] Immediate visual flash on the clicked button before resolving */
+var isCorrect=(chosen===correct);
+btn.classList.add(isCorrect?'correctFlash':'wrongFlash');
+if(!isCorrect) sfxHit();
+setTimeout(function(){
+if(isCorrect){
+var bonus=calcBeehiveScore(G.beehiveElapsed);
+closeBeehiveQuestion(bonus);
+} else {
+/* [J12] Wrong answer: 0 points, close, no new question */
+closeBeehiveQuestion(0);
+}
+},ANSWER_FEEDBACK_DELAY_MS);
+});
+}
+
+function closeBeehiveQuestion(bonus){
+safe(function(){
+if(G.beehiveTimerInterval){ clearInterval(G.beehiveTimerInterval); G.beehiveTimerInterval=null; }
+G.bonusScore+=bonus; G.score+=bonus;
+if(bonus>0){ addFloat(P.x+P.w/2,P.y-P.h-30,'+'+bonus+' HIVE BONUS','#ffd030',15); sfxCheckpoint(); }
+document.getElementById('questionOverlay').style.display='none';
+document.getElementById('questionTitle').textContent='JUMANJI ESCAPE CHALLENGE';
+document.getElementById('questionTitle').style.color='#ff9d50';
+document.getElementById('questionSubtitle').textContent='';
+document.getElementById('questionMultiplierHint').textContent='';
+G.isQuestion=false; G.isBeehiveQuestion=false;
+if(G.running){ G.lastTime=performance.now(); requestAnimationFrame(gameLoop); }
+});
+}
+
+/* ================================================================
+NOTIFICATIONS / CHECKPOINTS
+================================================================ */
+function showNotif(text){
+safe(function(){
+var el=document.getElementById('notifBanner');
+el.textContent=text; el.style.opacity='1';
+setTimeout(function(){ el.style.opacity='0'; },1600);
+});
+}
+
+function checkCheckpoints(){
+for(var i=0;i<CHECKPOINT_M.length;i++){
+var cm=CHECKPOINT_M[i];
+if(!G.checkpointsPassed.has(cm)&&G.distance>=cm){
+G.checkpointsPassed.add(cm); sfxCheckpoint(); showNotif('CHECKPOINT '+cm+'m');
+}
+}
+}
+
+/* ================================================================
+WORLD <-> SCREEN MAPPING
+================================================================ */
+function entityScreenX(worldX){ return worldX-G.scrollX+BW*0.5; }
+
+function refreshWorldPositions(){
+var i;
+for(i=0;i<diamonds.length;i++) diamonds[i].x=entityScreenX(diamonds[i].worldX);
+for(i=0;i<goldCoins.length;i++) goldCoins[i].x=entityScreenX(goldCoins[i].worldX);
+for(i=0;i<microbes.length;i++) microbes[i].x=entityScreenX(microbes[i].worldX);
+for(i=0;i<powerups.length;i++) powerups[i].x=entityScreenX(powerups[i].worldX)-powerups[i].w/2;
+for(i=0;i<letterCrates.length;i++) letterCrates[i].x=entityScreenX(letterCrates[i].worldX)-letterCrates[i].w/2;
+for(i=0;i<spikedLogs.length;i++) spikedLogs[i].x=entityScreenX(spikedLogs[i].worldX)-spikedLogs[i].w/2;
+for(i=0;i<carniPlants.length;i++) carniPlants[i].x=entityScreenX(carniPlants[i].worldX)-carniPlants[i].w/2;
+for(i=0;i<beehives.length;i++) beehives[i].x=entityScreenX(beehives[i].worldX)-beehives[i].w/2;
+for(i=0;i<platforms.length;i++) platforms[i].x=entityScreenX(platforms[i].worldX)-platforms[i].w/2;
+}
+
+/* ================================================================
+SPAWN SYSTEM
+================================================================ */
+function trySpawnFromTable(table,idxKey,onSpawn){
+while(G[idxKey]<table.length&&table[G[idxKey]].meter<=G.distance+LOOKAHEAD_M){
+onSpawn(table[G[idxKey]],G[idxKey]);
+G[idxKey]++;
+}
+}
+
+function spawnDiamondEntry(entry){
+for(var k=0;k<entry.clusterSize;k++){
+diamonds.push({worldX:(entry.meter+k*3)*PX_PER_METER,x:0,y:GROUND_Y-40-entry.yVariant*90-k*22,r:11,color:DIAMOND_COLORS[Math.floor(Math.random()*DIAMOND_COLORS.length)],phase:Math.random()*10,rot:Math.random()*Math.PI,taken:false});
+}
+}
+
+function spawnCoinEntry(entry){
+for(var k=0;k<entry.clusterSize;k++){
+goldCoins.push({worldX:(entry.meter+k*2.5)*PX_PER_METER,x:0,y:GROUND_Y-30-entry.yVariant*70,r:9,phase:Math.random()*10,spinA:Math.random()*6,glintT:Math.random()*10,taken:false});
+}
+}
+
+/* [J8] Microbes drift leftward independently of forward-hold state.
+[K1] Each microbe also carries an explicit w/h hitbox footprint used
+by the dedicated mascot-collision pass. */
+function spawnMicrobeEntry(entry){
+microbes.push({worldX:entry.meter*PX_PER_METER,x:0,y:GROUND_Y-36-Math.random()*60,r:17,w:34,h:34,color:MICROBE_COLORS[Math.floor(Math.random()*MICROBE_COLORS.length)],phase:Math.random()*6,pulsePhase:Math.random()*6,vx:30+Math.random()*45,alive:true});
+}
+
+/* [J4] Apple spawn from linear table -- symmetric spacing, no clustering */
+function spawnAppleEntry(entry){
+powerups.push({worldX:entry.meter*PX_PER_METER,x:0,y:GROUND_Y-34,w:26,h:30,type:'apple',taken:false});
+}
+
+function spawnGrowEntry(entry){
+powerups.push({worldX:entry.meter*PX_PER_METER,x:0,y:GROUND_Y-50,w:32,h:32,type:'grow',taken:false});
+}
+
+function spawnShrinkEntry(entry){
+powerups.push({worldX:entry.meter*PX_PER_METER,x:0,y:GROUND_Y-50,w:32,h:32,type:'shrink',taken:false});
+}
+
+function spawnBeehiveEntry(entry){
+beehives.push({worldX:entry.meter*PX_PER_METER,x:0,y:BEEHIVE_HANG_Y,w:46,h:54,triggered:false,sway:Math.random()*6,bees:null});
+}
+
+function spawnLetterEntry(entry,idx){
+letterCrates.push({worldX:entry.meter*PX_PER_METER,x:0,y:GROUND_Y-34,w:34,h:34,letter:PHRASE_LETTERS[idx],slotIndex:idx,opened:false,letterCollected:false,openStartTime:0,shakeTimer:0});
+}
+
+function spawnPlatformEntry(entry){
+var tierY=TIER_Y[entry.tier];
+platforms.push({worldX:entry.meter*PX_PER_METER,x:0,y:tierY,w:entry.width,h:18,type:entry.type,tier:entry.tier,wobble:0,wobbleDir:1,rockSeed:entry.rockSeed,rockClusterL:null,rockClusterR:null,grassField:null});
+}
+
+function maybeSpawnHazard(){
+var hazardChance=0.018;
+if(Math.random()<hazardChance){
+var roll=Math.random();
+var activeLogs=0,i;
+for(i=0;i<spikedLogs.length;i++){ if(!spikedLogs[i].passed) activeLogs++; }
+var activePlants=0;
+for(i=0;i<carniPlants.length;i++){ if(carniPlants[i].alive) activePlants++; }
+var spawnM=G.distance+LOOKAHEAD_M*0.92;
+if(spawnM>=TOTAL_DIST-50) return;
+if(roll<0.55&&activeLogs<MAX_SPIKED_LOGS_ONSCREEN){
+spikedLogs.push({worldX:spawnM*PX_PER_METER,x:0,y:GROUND_Y,w:70,h:26,passed:false});
+} else if(activePlants<MAX_PLANTS_ONSCREEN){
+carniPlants.push({worldX:spawnM*PX_PER_METER,x:0,y:GROUND_Y,w:46,h:70,alive:true,snapAnim:0,snapDir:1});
+}
+}
+}
+
+var lastHazardCheckM=-9999;
+function updateSpawning(){
+trySpawnFromTable(DIAMOND_TABLE,'diamondTableIdx',spawnDiamondEntry);
+trySpawnFromTable(COIN_TABLE,'coinTableIdx',spawnCoinEntry);
+trySpawnFromTable(MICROBE_TABLE,'microbeTableIdx',spawnMicrobeEntry);
+trySpawnFromTable(APPLE_TABLE,'appleTableIdx',spawnAppleEntry);
+trySpawnFromTable(BEEHIVE_TABLE,'beehiveTableIdx',spawnBeehiveEntry);
+trySpawnFromTable(GROW_TABLE,'growTableIdx',spawnGrowEntry);
+trySpawnFromTable(SHRINK_TABLE,'shrinkTableIdx',spawnShrinkEntry);
+trySpawnFromTable(LETTER_TABLE,'letterTableIdx',spawnLetterEntry);
+trySpawnFromTable(PLATFORM_TABLE,'platformTableIdx',spawnPlatformEntry);
+if(G.distance-lastHazardCheckM>=4){ lastHazardCheckM=G.distance; maybeSpawnHazard(); }
+}
+
+/* ================================================================
+CORE UPDATE LOOP
+================================================================ */
+function updatePlayerMovement(dt){
+/* [J2] GROW_SPEED_MULT is exactly 1.15 (+15%). No friction/drag applied. */
+var speed=PLAYER_MOVE_PX*(G.scaleMode==='grown'?GROW_SPEED_MULT:1.0);
+var pxPerSec=speed*60;
+if(G.fwdHeld) P.x+=pxPerSec*dt;
+if(P.x<PLAYER_MIN_X) P.x=PLAYER_MIN_X;
+if(P.x>PLAYER_MAX_X) P.x=PLAYER_MAX_X;
+}
+
+function updatePlayerPhysics(dt){
+if(P.dropTimer>0) P.dropTimer-=dt;
+var wasGrounded=P.onGround||P.onPlatform;
+P.vy+=GRAVITY*60*dt;
+P.y+=P.vy*60*dt;
+var newOnPlatform=false,newPlat=null;
+if(P.dropTimer<=0){
+for(var i=0;i<platforms.length;i++){
+var pl=platforms[i];
+var cx=P.x+P.w/2;
+var prevY=P.y-P.vy*60*dt;
+if(cx>pl.x&&cx<pl.x+pl.w&&P.vy>=0&&P.y>=pl.y&&prevY<=pl.y+8){
+newOnPlatform=true; newPlat=pl; break;
+}
+}
+}
+if(newOnPlatform){
+P.y=Math.round(newPlat.y); P.vy=0; P.onPlatform=true; P.currentPlat=newPlat; P.onGround=false;
+} else if(P.y>=GROUND_Y){
+P.y=Math.round(GROUND_Y); P.vy=0; P.onGround=true; P.onPlatform=false; P.currentPlat=null;
+} else {
+P.onGround=false; P.onPlatform=false; P.currentPlat=null;
+}
+var nowGrounded=P.onGround||P.onPlatform;
+if(nowGrounded&&!wasGrounded&&G.wasAirborne){ emitLandingShockwave(); }
+G.wasAirborne=!nowGrounded;
+}
+
+/* [J7] World scroll strictly gated behind forward-hold */
+function updateWorldScroll(dt){
+if(!G.fwdHeld) return;
+var pxPerSec=WORLD_SPEED_MPS*PX_PER_METER;
+G.scrollX+=pxPerSec*dt;
+G.distance=Math.min(TOTAL_DIST,G.scrollX/PX_PER_METER);
+}
+
+/* [J8] Microbe leftward drift: always active, independent of forward-hold */
+function updateMicrobeDrift(dt){
+for(var i=0;i<microbes.length;i++){
+var m=microbes[i]; if(!m.alive) continue;
+m.worldX-=m.vx*dt;
+}
+}
+
+function updateScaleMode(dt){
+if(G.scaleMode!=='normal'){
+G.scaleT-=dt;
+if(G.scaleT<=0){ G.scaleMode='normal'; G.scaleT=0; }
+}
+if(G.invulnT>0) G.invulnT-=dt;
+if(G.microbeInvulnT>0) G.microbeInvulnT-=dt; /* [K1] dedicated microbe i-frame countdown */
+}
+
+function damagePlayer(){
+if(G.invulnT>0) return;
+G.hearts--; G.invulnT=1.4; sfxHit(); addParticles(P.x+P.w/2,P.y-P.h/2,'#ff5040',10);
+if(G.hearts<=0){ G.hearts=0; triggerRevivalQuestion(); }
+}
+
+/* [K1] Dedicated microbe damage path. Kept distinct from the generic
+damagePlayer() hazard path so the exact 500ms flashing invincibility
+window requirement is met independently of the longer 1.4s hazard
+invuln window, while still sharing the same heart-reduction and
+revival-trigger behavior. */
+function damagePlayerFromMicrobe(){
+if(G.invulnT>0||G.microbeInvulnT>0) return;
+G.hearts--; G.microbeInvulnT=MICROBE_HIT_INVULN_MS/1000; sfxHit();
+addParticles(P.x+P.w/2,P.y-P.h/2,'#ff5040',10);
+if(G.hearts<=0){ G.hearts=0; triggerRevivalQuestion(); }
+}
+
+/* [K1] Explicit, dedicated AABB collision sweep between the mascot
+and every live microbe. Runs every frame regardless of laser timing
+so an un-blasted microbe reliably registers exactly one hit the
+instant its bounding box overlaps the mascot's bounding box. */
+function checkMicrobeMascotCollisions(){
+if(G.isQuestion||G.finishing||!G.running) return;
+var scaleNow=G.scaleMode==='grown'?GROW_SCALE:(G.scaleMode==='shrunk'?SHRINK_SCALE:1.0);
+var effW=P.w*scaleNow, effH=P.h*scaleNow;
+var effX=P.x+P.w/2-effW/2, effY=P.y-effH;
+for(var i=0;i<microbes.length;i++){
+var m=microbes[i]; if(!m||!m.alive) continue;
+var mx=m.x-m.w/2, my=m.y-m.h/2;
+if(rr(effX,effY,effW,effH,mx,my,m.w,m.h)){
+m.alive=false;
+addParticles(m.x,m.y,m.color.core,10);
+addFloat(m.x,m.y-6,'HIT!','#ff5040',13);
+damagePlayerFromMicrobe();
+}
+}
+}
+
+function checkCollisions(){
+if(G.isQuestion||G.finishing||!G.running) return;
+/* [J2/J3] Effective collision rect uses exact GROW_SCALE (1.5x) / SHRINK_SCALE (0.75x) */
+var scaleNow=G.scaleMode==='grown'?GROW_SCALE:(G.scaleMode==='shrunk'?SHRINK_SCALE:1.0);
+var effW=P.w*scaleNow, effH=P.h*scaleNow;
+var effX=P.x+P.w/2-effW/2, effY=P.y-effH;
+var i;
+for(i=0;i<diamonds.length;i++){
+var d=diamonds[i]; if(d.taken) continue;
+if(rr(effX,effY,effW,effH,d.x-d.r,d.y-d.r,d.r*2,d.r*2)){
+d.taken=true; G.diamondsCollected++; G.score+=25; sfxDiamondChime();
+addFloat(d.x,d.y-10,'+25',d.color,14); addParticles(d.x,d.y,d.color,8);
+}
+}
+for(i=0;i<goldCoins.length;i++){
+var c=goldCoins[i]; if(c.taken) continue;
+if(rr(effX,effY,effW,effH,c.x-c.r,c.y-c.r,c.r*2,c.r*2)){
+c.taken=true; G.coinsCollected++; G.score+=10; sfxCoinRing();
+addFloat(c.x,c.y-10,'+10','#ffd040',13);
+}
+}
+for(i=0;i<powerups.length;i++){
+var p=powerups[i]; if(p.taken) continue;
+if(rr(effX,effY,effW,effH,p.x,p.y,p.w,p.h)){
+p.taken=true;
+if(p.type==='apple'){ G.hearts=Math.min(G.maxHearts,G.hearts+1); G.score+=15; sfxPowerup(); addFloat(p.x+p.w/2,p.y-6,'+1 HP','#ff6050',14); }
+/* [J2] Accelerator Growth: 1.15x speed, 1.5x sprite height */
+else if(p.type==='grow'){ G.scaleMode='grown'; G.scaleT=8; sfxGrowth(); addFloat(p.x+p.w/2,p.y-6,'GROWTH +15% SPEED','#ffc060',13); }
+/* [J3] Shrink: 0.75x baseline size */
+else if(p.type==='shrink'){ G.scaleMode='shrunk'; G.scaleT=8; sfxShrink(); addFloat(p.x+p.w/2,p.y-6,'SHRINK 0.75x','#80c8ff',13); }
+}
+}
+/* [K3] Letter pickup: chime + dashboard tick only, ZERO points
+awarded at collection time. Full valuation happens at the 2500m
+win-state via the end-game letter economy calculator. */
+for(i=0;i<letterCrates.length;i++){
+var lc=letterCrates[i]; if(lc.letterCollected) continue;
+if(!lc.opened){
+if(rr(effX,effY,effW,effH,lc.x,lc.y,lc.w,lc.h)){ lc.opened=true; lc.openStartTime=performance.now()/1000; sfxLetter(); }
+} else {
+if(performance.now()/1000-lc.openStartTime>=0.4){
+lc.letterCollected=true; G.lettersCollected.add(lc.slotIndex); popTracker(lc.slotIndex);
+addFloat(lc.x+lc.w/2,lc.y-30,'COLLECTED','#ffc820',14);
+if(G.lettersCollected.size>=PHRASE_LETTERS.length&&!G.phraseComplete){
+G.phraseComplete=true; sfxPhraseComplete();
+addFloat(P.x+P.w/2,P.y-P.h-40,'FULL PHRASE - VALUE AT FINISH!','#ffe070',15);
+}
+}
+}
+}
+for(i=0;i<spikedLogs.length;i++){
+var sl=spikedLogs[i]; if(sl.passed) continue;
+if(rr(effX,effY,effW,effH,sl.x,sl.y-sl.h,sl.w,sl.h)){ sl.passed=true; sfxSpike(); damagePlayer(); }
+}
+for(i=0;i<carniPlants.length;i++){
+var cp=carniPlants[i]; if(!cp.alive) continue;
+if(rr(effX,effY,effW,effH,cp.x,cp.y-cp.h,cp.w,cp.h)){ cp.alive=false; cp.snapAnim=1; sfxPlantSnap(); damagePlayer(); }
+}
+for(i=0;i<beehives.length;i++){
+var bh=beehives[i]; if(bh.triggered) continue;
+if(rr(effX,effY,effW,effH,bh.x,bh.y-bh.h/2,bh.w,bh.h)){ bh.triggered=true; triggerBeehiveQuestion(); }
+}
+/* [K1] Dedicated microbe-vs-mascot sweep runs every frame here,
+independent of laser resolution order, fixing the bypass bug. */
+checkMicrobeMascotCollisions();
+}
+
+function updateLasers(dt){
+for(var i=lasers.length-1;i>=0;i--){
+var l=lasers[i];
+if(l.homing&&l.target&&l.target.alive){
+var dx=l.target.x-l.x,dy=l.target.y-l.y,dist=Math.max(1,Math.hypot(dx,dy));
+l.vx=(dx/dist)*22; l.vy=(dy/dist)*22;
+}
+l.x+=l.vx*60*dt; l.y+=l.vy*60*dt;
+var hit=false;
+for(var j=0;j<microbes.length;j++){
+var m=microbes[j]; if(!m.alive) continue;
+if(Math.hypot(m.x-l.x,m.y-l.y)<m.r+8){
+m.alive=false; hit=true; sfxMicrobePop(); G.score+=5;
+addParticles(m.x,m.y,m.color.core,8); addFloat(m.x,m.y,'+5','#ff9d50',12);
+break;
+}
+}
+if(hit||l.x>BW+60||l.x<-60) lasers.splice(i,1);
+}
+}
+
+function periodicCompact(){
+G.trackTimer++;
+if(G.trackTimer%30!==0) return;
+var minX=-CULL_MARGIN*2;
+compact(diamonds,function(d){ return !d.taken&&d.x>minX; });
+compact(goldCoins,function(c){ return !c.taken&&c.x>minX; });
+compact(powerups,function(p){ return !p.taken&&p.x>minX; });
+compact(microbes,function(m){ return m.alive&&m.x>minX; });
+compact(letterCrates,function(l){ return !l.letterCollected&&l.x>minX-200; });
+compact(spikedLogs,function(s){ return !s.passed&&s.x>minX; });
+compact(carniPlants,function(c){ return c.alive&&c.x>minX; });
+compact(beehives,function(b){ return !b.triggered&&b.x>minX; });
+compact(platforms,function(p){ return p.x>minX-300; });
+}
+
+function update(dt){
+if(Math.random()<0.2){
+
+pollen.push({
+
+x:Math.random()*BW,
+
+y:BH,
+
+phase:Math.random()*6,
+
+size:0.5+Math.random(),
+
+life:8
+
+});
+}
+
+for(var pp=pollen.length-1; pp>=0; pp--){
+    var p=pollen[pp];
+    p.life -= dt;
+    p.y -= 15*dt;
+    if(p.life <= 0) pollen.splice(pp, 1);
+}
+
+safe(function(){
+if(!G.running) return;
+if(G.finishing){
+G.finishTimer-=dt;
+updateParticles(dt); updateFloatingTexts(dt); updateDustPool(dt,0);
+for(var pp=pollen.length-1;pp>=0;pp--){
+
+var p=pollen[pp];
+
+p.life-=dt;
+
+p.y-=15*dt;
+
+if(p.life<=0)
+pollen.splice(pp,1);
+}
+
+if(G.finishTimer<=0){ G.finishing=false; G.running=false; showVictory(); }
+return;
+}
+if(G.isQuestion) return;
+updateWorldScroll(dt);
+updatePlayerMovement(dt);
+updatePlayerPhysics(dt);
+updateScaleMode(dt);
+updateSpawning();
+updateMicrobeDrift(dt);
+refreshWorldPositions();
+checkCollisions();
+updateLasers(dt);
+updateCanopyBirds(dt,G.fwdHeld?(WORLD_SPEED_MPS*PX_PER_METER):0);
+updateDustPool(dt,G.fwdHeld?(WORLD_SPEED_MPS*PX_PER_METER*dt):0);
+if((P.onGround||P.onPlatform)&&G.fwdHeld&&Math.random()<0.6) emitRunDust();
+updateFloatingTexts(dt);
+updateParticles(dt);
+periodicCompact();
+checkCheckpoints();
+/* THE FIX: Trigger the ending slightly early so players don't get stuck if they let go of the FWD button */
+if(!G.finishing && G.distance >= TOTAL_DIST - 10){ startFinish(); }
+});
+}
+
+/* ================================================================
+RENDER
+================================================================ */
+function updateHUD(){
+safe(function(){
+document.getElementById('hudLeft').textContent='HP: '+G.hearts+'/'+G.maxHearts;
+document.getElementById('hudMid').textContent=Math.floor(G.distance)+' / '+TOTAL_DIST+' m';
+document.getElementById('hudRight').textContent='SCORE '+Math.floor(G.score+0);
+document.getElementById('hcCoins').textContent='COIN '+G.coinsCollected+'/'+TOTAL_COINS;
+document.getElementById('hcDiamonds').textContent='GEM '+G.diamondsCollected+'/'+TOTAL_DIAMONDS;
+updateTracker();
+});
+}
+
+function render(){
+safe(function(){
+ctx.save(); applyVirtualScale();
+drawBackground();
+drawCanopyBirds();
+var i;
+for(i=0;i<platforms.length;i++) drawPlatform(platforms[i]);
+for(i=0;i<beehives.length;i++) drawBeehive(beehives[i]);
+for(i=0;i<carniPlants.length;i++) drawCarniPlant(carniPlants[i]);
+for(i=0;i<spikedLogs.length;i++) drawSpikedLog(spikedLogs[i]);
+for(i=0;i<letterCrates.length;i++) drawLetterCrate(letterCrates[i]);
+for(i=0;i<powerups.length;i++) drawPowerup(powerups[i]);
+for(i=0;i<goldCoins.length;i++) drawGoldCoin(goldCoins[i]);
+for(i=0;i<diamonds.length;i++) drawDiamond(diamonds[i]);
+for(i=0;i<microbes.length;i++) drawMicrobe(microbes[i]);
+drawDustPool();
+drawPlayer();
+for(i=0;i<lasers.length;i++) drawLaser(lasers[i]);
+var pt=performance.now()/1000;
+
+for(var pp=0;pp<pollen.length;pp++){
+
+var p=pollen[pp];
+
+ctx.fillStyle=
+'rgba(255,190,80,'+
+(0.3+0.7*Math.abs(
+Math.sin(pt*2+p.phase)
+))
++')';
+
+ctx.beginPath();
+
+ctx.arc(
+p.x+Math.sin(pt+p.phase)*8,
+p.y,
+p.size,
+0,
+Math.PI*2
+);
+
+ctx.fill();
+}
+
+drawParticles();
+drawFloatingTexts();
+ctx.restore();
+});
+updateHUD();
+}
+
+/* ================================================================
+MAIN LOOP / LIFECYCLE
+================================================================ */
+var fpsBannerEl=null,fpsAccum=0,fpsFrames=0,fpsLastUpdate=0;
+
+function gameLoop(now){
+if(!G.running) return;
+safe(function(){
+var dt=Math.min(0.05,(now-(G.lastTime||now))/1000);
+G.lastTime=now;
+update(dt);
+render();
+fpsFrames++;
+if(now-fpsLastUpdate>500){
+if(!fpsBannerEl) fpsBannerEl=document.getElementById('fpsBanner');
+var fps=Math.round(fpsFrames*1000/Math.max(1,now-fpsLastUpdate));
+if(fpsBannerEl) fpsBannerEl.textContent=fps+' fps';
+fpsFrames=0; fpsLastUpdate=now;
+}
+});
+if(G.running) requestAnimationFrame(gameLoop);
+}
+
+function startGame(){
+safe(function(){
+buildTracker();
+G.running=true; G.phase='running'; G.lastTime=performance.now();
+requestAnimationFrame(gameLoop);
+});
+}
+
+function startFinish(){
+if(G.finishing) return;
+G.finishing=true; G.finishTimer=2.0; ensureAudio(); sfxCrownChime();
+}
+
+function buildPartialPhrase(){
+var out='';
+for(var i=0;i<PHRASE_LETTERS.length;i++) out+=G.lettersCollected.has(i)?PHRASE_LETTERS[i]:'_';
+return out;
+}
+
+/* [K3] End-game letter economy calculator: each collected letter is
+worth exactly LETTER_POINT_VALUE (100) points, totalled here and
+folded into the final score only at the win-state. */
+function calcLetterEconomyTotal(){
+return G.lettersCollected.size*LETTER_POINT_VALUE;
+}
+
+/* [K3] Single source of truth for applying the letter-economy bonus
+to G.score. Idempotent via G.letterEconomyApplied -- safe to call
+from the in-flight victory-animation timer AND from the skip button,
+whichever happens first, without ever double-counting or losing the
+bonus. Returns the total that is (or already was) applied. */
+function awardLetterEconomyOnce(){
+var total=calcLetterEconomyTotal();
+if(!G.letterEconomyApplied){
+G.letterEconomyApplied=true;
+G.score+=total;
+if(total>0) sfxPhraseComplete();
+}
+return total;
+}
+
+function populateLetterBreakdown(){
+safe(function(){
+var grid=document.getElementById('letterBreakdownGrid');
+grid.innerHTML='';
+for(var i=0;i<PHRASE_LETTERS.length;i++){
+var got=G.lettersCollected.has(i);
+var chip=document.createElement('span');
+chip.className='lbChip '+(got?'got':'missing');
+chip.textContent=PHRASE_LETTERS[i];
+grid.appendChild(chip);
+}
+var total=calcLetterEconomyTotal();
+document.getElementById('letterBreakdownTotal').textContent=
+G.lettersCollected.size+' / '+PHRASE_LETTERS.length+' LETTERS x '+LETTER_POINT_VALUE+' PTS = +'+total+' PTS'+(G.phraseComplete?'  (FULL PHRASE!)':'');
+});
+}
+
+function populateEndScreen(){
+    safe(function(){
+        // 1. Grab all the scores and username
+        var r2Score = Math.floor(G.score);
+        var r1Score = parseInt(localStorage.getItem('round1Score')) || 0;
+        var uname = localStorage.getItem('username') || 'Player';
+        var totalScore = r1Score + r2Score;
+
+        var yieldPct=Math.round(((G.coinsCollected/TOTAL_COINS)+(G.diamondsCollected/TOTAL_DIAMONDS))/2*100);
+
+        // 2. Build the Grand Finale Scoreboard
+        document.getElementById('fScore').innerHTML = 
+            'PLAYER: ' + uname + '<br>' +
+            'ROUND 1: ' + r1Score + ' PTS<br>' +
+            'ROUND 2: ' + r2Score + ' PTS<br>' +
+            '<br><span style="color:#40ff90; font-size:24px; text-shadow:0 0 10px rgba(60,255,140,0.8);">GRAND TOTAL: ' + totalScore + ' PTS</span>';
+        
+        document.getElementById('fCoins').textContent='COINS: '+G.coinsCollected+' / '+TOTAL_COINS;
+        document.getElementById('fDiamonds').textContent='GEMS: '+G.diamondsCollected+' / '+TOTAL_DIAMONDS;
+        document.getElementById('fYield').textContent='COLLECTION YIELD: '+yieldPct+'%';
+        populateLetterBreakdown();
+        document.getElementById('phraseReveal').textContent=G.phraseComplete?TARGET_PHRASE:buildPartialPhrase();
+        
+        // 3. Silently Send Data to Google Sheets
+        if(GOOGLE_SHEET_URL !== "PASTE_YOUR_WEB_APP_URL_HERE") {
+	    // Grab the exact time the player finished the game
+    	    var finishTime = new Date().toLocaleString();
+            fetch(GOOGLE_SHEET_URL, {
+                method: "POST",
+		mode: "no-cors",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({
+	            timestamp: finishTime,
+                    username: uname,
+                    round1Score: r1Score,
+                    round2Score: r2Score,
+                    totalScore: totalScore
+                })
+            }).catch(function(e){ console.error("Sheet Error: ", e); });
+        }
+
+        document.getElementById('endScreen').style.display='flex';
+    });
+}
+
+/* [J1] Victory overlay rebranded.
+[K3] The letter-economy total is now applied to the score and flashed
+explicitly during this cyclone/victory animation, before the player
+reaches the final results screen. */
+var victoryAnimStop = false;
+function runVictoryAnim(){
+    victoryAnimStop = false;
+    var vCanvas = document.getElementById('victoryCanvas');
+    var vctx = vCanvas.getContext('2d');
+    vCanvas.width = 640; vCanvas.height = 360;
+    var start = performance.now();
+    var letterTotal = calcLetterEconomyTotal();
+
+    /* Create the fake gems for the swirl effect */
+    var swirlGems = [];
+    for(var i=0; i<40; i++){
+        swirlGems.push({
+            angle: Math.random() * Math.PI * 2,
+            dist: 200 + Math.random() * 150,
+            speed: 2 + Math.random() * 3,
+            color: DIAMOND_COLORS[i % DIAMOND_COLORS.length]
+        });
+    }
+
+    function frame(now){
+        if(victoryAnimStop) return;
+        var t = (now - start) / 1000;
+        
+        /* Award points early in the animation so the total is ready */
+        if(t >= 1.1){ awardLetterEconomyOnce(); }
+
+        safe(function(){
+            /* Dark cinematic background */
+            var g = vctx.createLinearGradient(0, 0, 0, 360);
+            g.addColorStop(0, '#1a0b2e'); g.addColorStop(0.5, '#4a154b'); g.addColorStop(1, '#8a3c3c');
+            vctx.fillStyle = g; vctx.fillRect(0, 0, 640, 360);
+
+            var cx = 320, cy = 200;
+
+            /* PHASE 1: The Swirling Gemstones */
+            if(t < 3.5) {
+                var pull = Math.min(1, t / 2.5); // Pulls gems to the center over time
+                for(var i=0; i<swirlGems.length; i++){
+                    var gem = swirlGems[i];
+                    var currentDist = gem.dist * (1 - Math.pow(pull, 2));
+                    var currentAngle = gem.angle + t * gem.speed;
+                    var gx = cx + Math.cos(currentAngle) * currentDist;
+                    var gy = cy - 40 + Math.sin(currentAngle) * currentDist;
+
+                    vctx.save();
+                    vctx.translate(gx, gy); vctx.rotate(currentAngle);
+                    vctx.fillStyle = gem.color;
+                    vctx.shadowColor = gem.color; vctx.shadowBlur = 10;
+                    vctx.beginPath(); vctx.moveTo(0,-8); vctx.lineTo(6,0); vctx.lineTo(0,8); vctx.lineTo(-6,0); vctx.fill();
+                    vctx.restore();
+                }
+            }
+
+            /* PHASE 2: The Crown Forms */
+            var crownAlpha = 0;
+            if(t > 2.5 && t < 4.5) crownAlpha = Math.min(1, (t - 2.5) * 2);
+            if(t >= 4.5) crownAlpha = Math.max(0, 1 - (t - 4.5) * 2); // Fades out as door opens
+            if(crownAlpha > 0) {
+                vctx.save(); vctx.globalAlpha = crownAlpha;
+                vctx.fillStyle = '#ffc820'; vctx.shadowColor = '#ffc820'; vctx.shadowBlur = 25;
+                vctx.beginPath();
+                vctx.moveTo(cx - 30, cy - 10); vctx.lineTo(cx - 40, cy - 40); vctx.lineTo(cx - 15, cy - 20);
+                vctx.lineTo(cx, cy - 50); vctx.lineTo(cx + 15, cy - 20); vctx.lineTo(cx + 40, cy - 40);
+                vctx.lineTo(cx + 30, cy - 10); vctx.fill();
+                vctx.restore();
+            }
+
+            /* PHASE 3: The Door Opens & Black Figure Appears */
+            var doorAlpha = 0;
+            if(t > 4.0) doorAlpha = Math.min(1, (t - 4.0));
+            if(doorAlpha > 0) {
+                vctx.save(); vctx.globalAlpha = doorAlpha;
+                // Glowing Doorway
+                vctx.shadowColor = '#e6ab7c'; vctx.shadowBlur = 40;
+                vctx.fillStyle = '#fce6c8';
+                vctx.fillRect(cx - 35, cy - 80, 70, 110);
+                vctx.shadowBlur = 0;
+                
+                // Black Figure stepping out
+                var walk = Math.min(1, (t - 4.5) * 0.4); // Scale up as it walks forward
+                if(walk > 0) {
+                    var figY = cy - 40 + (walk * 30);
+                    vctx.fillStyle = '#000';
+                    vctx.beginPath(); vctx.arc(cx, figY, 12 * (1 + walk), 0, Math.PI*2); vctx.fill(); // Head
+                    vctx.fillRect(cx - 15 * (1 + walk), figY + 15 * (1 + walk), 30 * (1 + walk), 45 * (1 + walk)); // Body
+                }
+                vctx.restore();
+            }
+
+            /* PHASE 4: "JUMANJI ESCAPED" Text */
+            if(t >= 6.0) {
+                var textAlpha = Math.min(1, (t - 6.0));
+                vctx.save(); vctx.globalAlpha = textAlpha;
+                vctx.fillStyle = '#ff9d50';
+                vctx.font = 'bold 36px Courier New'; vctx.textAlign = 'center';
+                vctx.shadowColor = 'rgba(255,150,60,0.8)'; vctx.shadowBlur = 15;
+                vctx.fillText('JUMANJI ESCAPED', cx, 80);
+
+                vctx.font = 'bold 16px Courier New'; vctx.fillStyle = '#ffd030';
+                vctx.shadowColor = 'rgba(255,200,0,0.85)'; vctx.shadowBlur = 12;
+                vctx.fillText('LETTERS: ' + G.lettersCollected.size + ' / ' + PHRASE_LETTERS.length + '  x  ' + LETTER_POINT_VALUE + ' PTS', cx, 280);
+                vctx.fillText('LETTER BONUS: +' + letterTotal + ' PTS', cx, 310);
+                vctx.shadowBlur = 0;
+                vctx.font = '12px Courier New'; vctx.fillStyle = 'rgba(255,225,190,0.85)';
+                vctx.fillText('RUNNING TOTAL: ' + Math.floor(G.score), cx, 335);
+                vctx.restore();
+            }
+        });
+
+        if(t < 10.0 && !victoryAnimStop){ requestAnimationFrame(frame); }
+        else if(!victoryAnimStop){ finishVictoryToEndScreen(); }
+    }
+    requestAnimationFrame(frame);
+}
+function finishVictoryToEndScreen(){
+if(victoryAnimStop) return;
+victoryAnimStop=true;
+document.getElementById('victoryOverlay').style.display='none';
+document.getElementById('victorySkip').style.display='none';
+/* [K3] Guarantee the bonus has been applied even if the player skips
+before the in-animation award fired at t>=1.1s. Idempotent, so this
+never double-applies. */
+awardLetterEconomyOnce();
+populateEndScreen();
+}
+
+function showVictory(){
+stopAmbient();
+document.getElementById('victoryOverlay').style.display='flex';
+document.getElementById('victorySkip').style.display='block';
+runVictoryAnim();
+}
+
+document.getElementById('victorySkip').addEventListener('click',function(){
+/* [K3] If skipped before the in-animation award fired, applying it
+here guarantees the bonus is never lost; the idempotent guard means
+it still only ever applies exactly once. */
+awardLetterEconomyOnce();
+finishVictoryToEndScreen();
+});
+var rBtn = document.getElementById('restartBtn');
+rBtn.innerText = 'FINISH TOURNAMENT';
+rBtn.addEventListener('click',function(){ 
+    var finalName = localStorage.getItem('username') || "Player";
+    alert("Tournament Complete! " + finalName + "'s score has been officially submitted to the committee.");
+});
+
+/* ================================================================
+BOOTSTRAP
+================================================================ */
+resizeCanvas();
+initPebbles();
+initCanopyBirds();
+buildRevivalPool();
+buildBeehivePool();
+runCinematic();
+
+})();
+</script>
+</body>
+</html>
+

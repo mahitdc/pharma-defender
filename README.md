@@ -74,10 +74,11 @@ pharma-defender/
 │
 ├── README.md
 ├── screenshots/
-│   ├── gameplay1.png
-│   ├── gameplay2.png
-│   ├── quiz.png
-│   └── ending.png
+│   ├── game_ending.png
+│   ├── quiz_play.png
+│   ├── round1_game.png
+│   ├── round2_game.png
+│   └── trial_round_gameplay.png
 │
 ├── trial-round/
 │   └── index.html
